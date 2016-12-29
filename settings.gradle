@@ -1,4 +1,5 @@
 rootProject.name = 'hermes'
 include 'common'
-
-
+include 'integration-test'
+include 'initializer'
+include 'worker'
