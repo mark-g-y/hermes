@@ -36,7 +36,7 @@ public class AssigningWorker implements State {
             int index = (int)(Math.random() * workers.size());
             String worker = workers.get(index);
             String url = new String(zk.getData(ZKPaths.WORKERS + "/" + worker, null, null));
-            CompletableFuture future = new CompletableFuture();
+            CompletableFuture<Void> future = new CompletableFuture<>();
             AssignPartitionSocketClient assignPartitionSocketClient = new AssignPartitionSocketClient(url, partition, future);
             assignPartitionSocketClient.start();
             future.get();

@@ -11,9 +11,9 @@ import java.util.concurrent.CompletableFuture;
 public class AssignPartitionSocketClient extends SocketClient {
     private PacketTimeoutManager packetTimeoutManager;
     private String partition;
-    private CompletableFuture future;
+    private CompletableFuture<Void> future;
 
-    public AssignPartitionSocketClient(String url, String partition, CompletableFuture future) {
+    public AssignPartitionSocketClient(String url, String partition, CompletableFuture<Void> future) {
         super(url);
         this.partition = partition;
         this.future = future;

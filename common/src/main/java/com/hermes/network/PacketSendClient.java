@@ -1,5 +1,6 @@
 package com.hermes.network;
 
+import com.hermes.client.workerallocation.Worker;
 import com.hermes.network.packet.AckPacket;
 import com.hermes.network.packet.Packet;
 import com.hermes.network.timeout.PacketTimeoutManager;
@@ -9,12 +10,14 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 public class PacketSendClient extends SocketClient {
+    private Worker serverWorker;
     private PacketTimeoutManager packetTimeoutManager;
     private Thread receiverThread;
-    private PacketSendClientCallback callback;
+    private CompletableFuture<Void> callback;
 
-    public PacketSendClient(String url, PacketSendClientCallback callback) {
-        super(url);
+    public PacketSendClient(Worker serverWorker, CompletableFuture<Void> callback) {
+        super(serverWorker.getUrl());
+        this.serverWorker = serverWorker;
         this.callback = callback;
         this.packetTimeoutManager = new PacketTimeoutManager();
     }
@@ -27,7 +30,7 @@ public class PacketSendClient extends SocketClient {
                 while (packet != null) {
                     switch (packet.TYPE) {
                         case ACK:
-                            packetTimeoutManager.messageReceived(((AckPacket) packet).ackMessageId);
+                            packetTimeoutManager.messageReceived(((AckPacket)packet).ackMessageId);
                             break;
                         default:
                             System.out.println("Error - received unrecognized packet type " + packet.TYPE);
@@ -35,7 +38,7 @@ public class PacketSendClient extends SocketClient {
                     packet = readReply();
                 }
             } catch (IOException e) {
-                callback.onError(e);
+                callback.completeExceptionally(e);
             }
         });
         receiverThread.start();
@@ -48,6 +51,10 @@ public class PacketSendClient extends SocketClient {
         } catch (IOException e) {
             sendPacketFuture.completeExceptionally(e);
         }
+    }
+
+    public Worker getServerWorker() {
+        return serverWorker;
     }
 
     public void stop() {

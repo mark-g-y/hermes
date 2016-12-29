@@ -9,7 +9,7 @@ public class PacketTimeoutNode implements Delayed {
     public long timeoutTime;
     public CompletableFuture future;
 
-    public PacketTimeoutNode(String messageId, long timeoutTime, CompletableFuture future) {
+    public PacketTimeoutNode(String messageId, long timeoutTime, CompletableFuture<Void> future) {
         this.messageId = messageId;
         this.timeoutTime = timeoutTime;
         this.future = future;
