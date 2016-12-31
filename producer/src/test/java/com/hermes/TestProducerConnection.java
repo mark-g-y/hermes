@@ -1,37 +1,26 @@
 package com.hermes;
 
 import com.hermes.partition.Partition;
-import com.hermes.zookeeper.ZKManager;
+import com.hermes.test.UsesZooKeeperTest;
 import com.hermes.zookeeper.ZKPaths;
 import com.hermes.zookeeper.ZKUtility;
 import junit.framework.Assert;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.testng.annotations.*;
 
 import java.util.concurrent.CompletableFuture;
 
-public class TestProducerConnection {
-    private static final String ZK_URL = "localhost:2181";
+public class TestProducerConnection extends UsesZooKeeperTest {
     private static final String CHANNEL = "foobar";
     private static final String PARTITION = Partition.get(CHANNEL);
 
-    private ZooKeeper zk;
     private MockWorker mockWorker1;
     private MockWorker mockWorker2;
 
-    @BeforeClass
-    public void setUp() {
-        ZKManager.init(ZK_URL);
-        zk = ZKManager.get();
-    }
-
     @BeforeMethod
     public void beforeMethod() throws Exception {
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
-        Initializer initializer = new Initializer(ZK_URL);
-        initializer.run();
+        super.beforeMethod();
 
         mockWorker1 = new MockWorker(3000);
         new Thread(() -> mockWorker1.start()).start();
@@ -118,10 +107,5 @@ public class TestProducerConnection {
         mockWorker1.stop();
         mockWorker2.getReceivedMessages().clear();
         mockWorker2.stop();
-    }
-
-    @AfterClass
-    public void tearDown() {
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
     }
 }

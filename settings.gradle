@@ -5,3 +5,5 @@ include 'initializer'
 include 'worker'
 include 'producer'
 include 'consumer'
+include 'test-common'
+

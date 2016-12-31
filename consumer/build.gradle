@@ -10,7 +10,7 @@ repositories {
 
 dependencies {
     testCompile group: 'org.testng', name: 'testng', version: '6.9.13.6'
-    testCompile project(':initializer')
+    testCompile project(':test-common')
 
     compile project(':common')
 }

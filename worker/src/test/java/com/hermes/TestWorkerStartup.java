@@ -1,31 +1,16 @@
 package com.hermes;
 
-import com.hermes.zookeeper.ZKManager;
+import com.hermes.test.UsesZooKeeperTest;
 import com.hermes.zookeeper.ZKPaths;
-import com.hermes.zookeeper.ZKUtility;
-import org.apache.zookeeper.ZooKeeper;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-public class TestWorkerStartup {
-    private static final String ZK_URL = "localhost:2181";
-    private ZooKeeper zk;
+public class TestWorkerStartup extends UsesZooKeeperTest {
     private Worker worker1;
     private Worker worker2;
-
-    @BeforeClass
-    public void setUp() {
-        ZKManager.init(ZK_URL);
-        zk = ZKManager.get();
-
-        Initializer initializer = new Initializer(ZK_URL);
-        initializer.run();
-    }
 
     @Test
     public void testWorkerStartup() {
@@ -66,10 +51,5 @@ public class TestWorkerStartup {
     public void afterMethod() {
         worker1.stop();
         worker2.stop();
-    }
-
-    @AfterClass
-    public void tearDown() {
-        ZKUtility.deleteChildren(ZKManager.get(), ZKPaths.ROOT, -1);
     }
 }

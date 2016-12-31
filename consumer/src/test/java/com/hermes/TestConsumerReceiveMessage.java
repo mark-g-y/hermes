@@ -1,14 +1,13 @@
 package com.hermes;
 
 import com.hermes.partition.Partition;
+import com.hermes.test.UsesZooKeeperTest;
 import com.hermes.worker.AbstractMockWorker;
 import com.hermes.worker.MessageBroadcastWorker;
-import com.hermes.zookeeper.ZKManager;
 import com.hermes.zookeeper.ZKPaths;
 import com.hermes.zookeeper.ZKUtility;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -17,28 +16,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestConsumerReceiveMessage {
-    private static final String ZK_URL = "localhost:2181";
+public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
     private static final String CHANNEL = "foobar";
     private static final String PARTITION = Partition.get(CHANNEL);
     private static final int TIMEOUT = 3000;
 
-    private ZooKeeper zk;
     private Consumer consumer;
     private MessageBroadcastWorker[] workers;
-
-    @BeforeClass
-    public void setUp() {
-        ZKManager.init(ZK_URL);
-        zk = ZKManager.get();
-    }
-
-    @BeforeMethod
-    public void beforeMethod() throws Exception {
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
-        Initializer initializer = new Initializer(ZK_URL);
-        initializer.run();
-    }
 
     @Test
     public void testConsumerReceiveMessage() throws Exception {
@@ -127,11 +111,6 @@ public class TestConsumerReceiveMessage {
         for (AbstractMockWorker worker : workers) {
             worker.stop();
         }
-    }
-
-    @AfterClass
-    public void tearDown() {
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
     }
 
     private void startWorkers() throws Exception {

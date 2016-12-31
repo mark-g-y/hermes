@@ -1,33 +1,13 @@
 package com.hermes;
 
 import com.hermes.client.workerallocation.WorkerManager;
-import com.hermes.zookeeper.ZKManager;
-import com.hermes.zookeeper.ZKPaths;
-import com.hermes.zookeeper.ZKUtility;
-import org.apache.zookeeper.ZooKeeper;
+import com.hermes.test.UsesZooKeeperTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class TestAssignWorkerToPartition {
-    private static final String ZK_URL = "localhost:2181";
-    private ZooKeeper zk;
+public class TestAssignWorkerToPartition extends UsesZooKeeperTest {
     private Worker[] workers;
-
-    @BeforeClass
-    public void setUp() {
-        ZKManager.init(ZK_URL);
-        zk = ZKManager.get();
-    }
-
-    @BeforeMethod
-    public void beforeMethod() {
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
-        Initializer initializer = new Initializer(ZK_URL);
-        initializer.run();
-    }
 
     @Test
     public void testAssignWorkerToFirstPartition() throws Exception {
@@ -60,6 +40,5 @@ public class TestAssignWorkerToPartition {
         for (Worker worker : workers) {
             worker.stop();
         }
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
     }
 }
