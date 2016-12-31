@@ -13,9 +13,9 @@ import java.util.Set;
 
 public abstract class SocketServer {
 
+    protected Set<HandlerThread> threads;
     private volatile boolean shouldAcceptConnections = true;
     private int port;
-    private Set<HandlerThread> threads;
     private ServerSocket socket;
 
     public SocketServer(int port) {

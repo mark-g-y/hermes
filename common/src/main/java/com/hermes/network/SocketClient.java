@@ -48,7 +48,7 @@ public abstract class SocketClient {
         }
     }
 
-    protected void send(Packet packet) throws IOException {
+    protected synchronized void send(Packet packet) throws IOException {
         oos.writeObject(packet);
     }
 

@@ -5,6 +5,7 @@ import com.hermes.fsm.Context;
 import com.hermes.fsm.Fsm;
 import com.hermes.fsm.State;
 import com.hermes.partition.Partition;
+import org.apache.zookeeper.Watcher;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -12,10 +13,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public class WorkerManager {
-    public static List<Worker> getAllWorkersForChannel(String channelName) throws InterruptedException,
-                                                                                  ExecutionException {
+    public static List<Worker> getAllWorkersForChannel(String channelName, Watcher workerWatcher) throws
+                                                                                                  InterruptedException,
+                                                                                                  ExecutionException {
         State defaultState = new Disconnected();
-        State[] states = new State[] {new AssigningWorker(), new FinishedAllocatingWorkers(), new GettingWorkers(),
+        State[] states = new State[] {new AssigningWorker(), new FinishedAllocatingWorkers(), new GettingWorkers(workerWatcher),
                                       defaultState };
         Fsm fsm = new Fsm();
         fsm.addStates(Arrays.asList(states));
@@ -26,6 +28,11 @@ public class WorkerManager {
         fsm.run(defaultState);
 
         return future.get();
+    }
+
+    public static List<Worker> getAllWorkersForChannel(String channelName) throws InterruptedException,
+                                                                                  ExecutionException {
+        return getAllWorkersForChannel(channelName, null);
     }
 
     public static List<Worker> selectWorkers(List<Worker> workers, int numToSelect) {
