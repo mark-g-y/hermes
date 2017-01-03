@@ -2,9 +2,12 @@ package com.hermes;
 
 import com.hermes.client.workerallocation.Worker;
 import com.hermes.client.workerallocation.WorkerManager;
+import com.hermes.network.packet.InitPacket;
 import org.apache.zookeeper.Watcher;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,6 +73,11 @@ public class Consumer {
         ConsumerClient consumerClient = new ConsumerClient(worker, receiver);
         clients.add(consumerClient);
         consumerClient.start();
+        try {
+            consumerClient.init(new InitPacket(InitPacket.ClientType.CONSUMER, channelName));
+        } catch (IOException e) {
+            // let backups handle failure via sending through different channel
+        }
     }
 
     public void stop() {

@@ -1,47 +1,31 @@
 package com.hermes;
 
 import com.hermes.partition.Partition;
-import com.hermes.worker.ConnectionCounterWorker;
-import com.hermes.zookeeper.ZKManager;
+import com.hermes.test.UsesZooKeeperTest;
+import com.hermes.worker.ConnectionCounterSocketServer;
 import com.hermes.zookeeper.ZKPaths;
 import com.hermes.zookeeper.ZKUtility;
 import junit.framework.Assert;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.testng.annotations.*;
 
-public class TestConsumerMaintainWorkers {
-    private static final String ZK_URL = "localhost:2181";
+public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
     private static final String CHANNEL = "foobar";
     private static final String PARTITION = Partition.get(CHANNEL);
 
-    private ZooKeeper zk;
-    private ConnectionCounterWorker[] workers;
-
-    @BeforeClass
-    public void setUp() {
-        ZKManager.init(ZK_URL);
-        zk = ZKManager.get();
-    }
-
-    @BeforeMethod
-    public void beforeMethod() throws Exception {
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
-        Initializer initializer = new Initializer(ZK_URL);
-        initializer.run();
-    }
+    private ConnectionCounterSocketServer[] servers;
 
     @Test
     public void testConnectExistingWorkers() throws Exception {
-        workers = new ConnectionCounterWorker[] {new ConnectionCounterWorker("1", 3000),
-                                                 new ConnectionCounterWorker("2", 3001),
-                                                 new ConnectionCounterWorker("3", 3002)};
+        servers = new ConnectionCounterSocketServer[] { new ConnectionCounterSocketServer("1", 3000),
+                                                        new ConnectionCounterSocketServer("2", 3001),
+                                                        new ConnectionCounterSocketServer("3", 3002) };
         startWorkers();
 
-        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + workers[0].getId(), null,
+        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[0].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + workers[1].getId(), null,
+        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[1].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
         Consumer consumer = new Consumer(CHANNEL, new Receiver() {
@@ -53,22 +37,23 @@ public class TestConsumerMaintainWorkers {
             }
         });
         consumer.start();
+        Thread.sleep(1000);
         consumer.stop();
 
-        Assert.assertEquals(workers[0].getNumPreviousAndCurrentConnections(), 1);
-        Assert.assertEquals(workers[1].getNumPreviousAndCurrentConnections(), 1);
-        Assert.assertEquals(workers[2].getNumPreviousAndCurrentConnections(), 0);
+        Assert.assertEquals(servers[0].getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(servers[1].getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(servers[2].getNumPreviousAndCurrentConnections(), 0);
     }
 
     @Test
     public void testDetectAndConnectNewWorker() throws Exception {
-        workers = new ConnectionCounterWorker[] {new ConnectionCounterWorker("1", 3000),
-                                                 new ConnectionCounterWorker("2", 3001)};
+        servers = new ConnectionCounterSocketServer[] { new ConnectionCounterSocketServer("1", 3000),
+                                                        new ConnectionCounterSocketServer("2", 3001) };
         startWorkers();
 
-        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + workers[0].getId(), null,
+        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[0].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + workers[1].getId(), null,
+        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[1].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
         Consumer consumer = new Consumer(CHANNEL, new Receiver() {
@@ -80,41 +65,42 @@ public class TestConsumerMaintainWorkers {
             }
         });
         consumer.start();
+        Thread.sleep(1000);
 
-        ConnectionCounterWorker newWorker = new ConnectionCounterWorker("3", 3002);
-        new Thread(() -> newWorker.start()).start();
+        ConnectionCounterSocketServer newServer = new ConnectionCounterSocketServer("3", 3002);
+        new Thread(() -> newServer.start()).start();
 
-        ConnectionCounterWorker newWorker2 = new ConnectionCounterWorker("4", 3003);
-        new Thread(() -> newWorker2.start()).start();
+        ConnectionCounterSocketServer newServer2 = new ConnectionCounterSocketServer("4", 3003);
+        new Thread(() -> newServer2.start()).start();
 
-        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + newWorker.getId(), null,
+        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + newServer.getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + newWorker2.getId(), null,
+        ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + newServer2.getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
         // wait for ZooKeeper watch to trigger and consumer to connect to new client
         Thread.sleep(7500);
 
-        newWorker.stop();
-        newWorker2.stop();
+        newServer.stop();
+        newServer2.stop();
         consumer.stop();
 
-        Assert.assertEquals(workers[0].getNumPreviousAndCurrentConnections(), 1);
-        Assert.assertEquals(workers[1].getNumPreviousAndCurrentConnections(), 1);
-        Assert.assertEquals(newWorker.getNumPreviousAndCurrentConnections(), 1);
-        Assert.assertEquals(newWorker2.getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(servers[0].getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(servers[1].getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(newServer.getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(newServer2.getNumPreviousAndCurrentConnections(), 1);
     }
 
     @Test
     public void testDetectAndDisconnectDroppedWorker() throws Exception {
-        workers = new ConnectionCounterWorker[] {new ConnectionCounterWorker("1", 3000),
-                                                 new ConnectionCounterWorker("2", 3001),
-                                                 new ConnectionCounterWorker("3", 3002)};
+        servers = new ConnectionCounterSocketServer[] {new ConnectionCounterSocketServer("1", 3000),
+                                                       new ConnectionCounterSocketServer("2", 3001),
+                                                       new ConnectionCounterSocketServer("3", 3002)};
         startWorkers();
 
-        for (ConnectionCounterWorker worker : workers) {
-            ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + worker.getId(), null,
+        for (ConnectionCounterSocketServer server : servers) {
+            ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + server.getId(), null,
                                          ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
 
@@ -129,34 +115,29 @@ public class TestConsumerMaintainWorkers {
         consumer.start();
 
         // simulate worker failure
-        workers[2].stop();
-        zk.delete(ZKPaths.PARTITIONS + "/" + PARTITION + "/" + workers[2].getId(), -1);
+        servers[2].stop();
+        zk.delete(ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[2].getId(), -1);
 
         // wait for worker failure to be detected
         Thread.sleep(5000);
 
         // despite worker failing, consumer should not try to reconnect to non-failing workers
-        // hence, the number of previous & current connections to each should still be 1
-        Assert.assertEquals(workers[0].getNumPreviousAndCurrentConnections(), 1);
-        Assert.assertEquals(workers[1].getNumPreviousAndCurrentConnections(), 1);
-        Assert.assertEquals(workers[2].getNumPreviousAndCurrentConnections(), 1);
+        // hence, the number of previous & current connection to each should still be 1
+        Assert.assertEquals(servers[0].getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(servers[1].getNumPreviousAndCurrentConnections(), 1);
+        Assert.assertEquals(servers[2].getNumPreviousAndCurrentConnections(), 1);
     }
 
     @AfterMethod
     public void afterMethod() {
-        for (ConnectionCounterWorker worker : workers) {
-            worker.stop();
+        for (ConnectionCounterSocketServer server : servers) {
+            server.stop();
         }
     }
 
-    @AfterClass
-    public void tearDown() {
-        ZKUtility.deleteChildren(zk, ZKPaths.ROOT, -1);
-    }
-
     private void startWorkers() {
-        for (ConnectionCounterWorker worker : workers) {
-            new Thread(() -> worker.start()).start();
+        for (ConnectionCounterSocketServer server : servers) {
+            new Thread(() -> server.start()).start();
         }
     }
 }

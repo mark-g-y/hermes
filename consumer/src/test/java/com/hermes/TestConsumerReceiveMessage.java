@@ -1,9 +1,9 @@
 package com.hermes;
 
+import com.hermes.network.SocketServer;
 import com.hermes.partition.Partition;
 import com.hermes.test.UsesZooKeeperTest;
-import com.hermes.worker.AbstractMockWorker;
-import com.hermes.worker.MessageBroadcastWorker;
+import com.hermes.worker.MessageBroadcastSocketServer;
 import com.hermes.zookeeper.ZKPaths;
 import com.hermes.zookeeper.ZKUtility;
 import org.apache.zookeeper.CreateMode;
@@ -22,13 +22,13 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
     private static final int TIMEOUT = 3000;
 
     private Consumer consumer;
-    private MessageBroadcastWorker[] workers;
+    private MessageBroadcastSocketServer[] servers;
 
     @Test
     public void testConsumerReceiveMessage() throws Exception {
-        workers = new MessageBroadcastWorker[1];
-        workers[0] = new MessageBroadcastWorker("broadcaster", 3000);
-        startWorkers();
+        servers = new MessageBroadcastSocketServer[1];
+        servers[0] = new MessageBroadcastSocketServer("broadcaster", 3000);
+        startServers();
 
         CompletableFuture<String> receiveMessageFuture = new CompletableFuture<>();
         consumer = new Consumer(CHANNEL, new Receiver() {
@@ -42,9 +42,10 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
             }
         });
         consumer.start();
+        Thread.sleep(1000);
 
         String message = "Test";
-        List<CompletableFuture<Void>> ackFutures = workers[0].broadcastMessage(message);
+        List<CompletableFuture<Void>> ackFutures = servers[0].broadcastMessage(message);
 
         try {
             String receivedMessage = receiveMessageFuture.get(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -58,13 +59,13 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
 
     @Test
     public void testConsumerReceiveMessagesFromMultipleWorkers() throws Exception {
-        workers = new MessageBroadcastWorker[2];
-        workers[0] = new MessageBroadcastWorker("broadcaster1", 3000);
-        workers[1] = new MessageBroadcastWorker("broadcaster2", 3001);
-        startWorkers();
+        servers = new MessageBroadcastSocketServer[2];
+        servers[0] = new MessageBroadcastSocketServer("broadcaster1", 3000);
+        servers[1] = new MessageBroadcastSocketServer("broadcaster2", 3001);
+        startServers();
 
         AtomicInteger completedIndex = new AtomicInteger(0);
-        CompletableFuture<String>[] receiveMessageFutures = new CompletableFuture[workers.length];
+        CompletableFuture<String>[] receiveMessageFutures = new CompletableFuture[servers.length];
         for (int i = 0;i < receiveMessageFutures.length; i++) {
             receiveMessageFutures[i] = new CompletableFuture<>();
         }
@@ -79,11 +80,12 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
             }
         });
         consumer.start();
+        Thread.sleep(1000);
 
         String[] messages = new String[] {"test1", "test2"};
-        List<CompletableFuture<Void>>[] ackFutures = new List[workers.length];
-        for (int i = 0; i < workers.length; i++) {
-            ackFutures[i] = workers[i].broadcastMessage(messages[i]);
+        List<CompletableFuture<Void>>[] ackFutures = new List[servers.length];
+        for (int i = 0; i < servers.length; i++) {
+            ackFutures[i] = servers[i].broadcastMessage(messages[i]);
         }
 
         String[] receivedMessages = new String[messages.length];
@@ -108,16 +110,16 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
     @AfterMethod
     public void afterMethod() {
         consumer.stop();
-        for (AbstractMockWorker worker : workers) {
-            worker.stop();
+        for (SocketServer server : servers) {
+            server.stop();
         }
     }
 
-    private void startWorkers() throws Exception {
-        for (AbstractMockWorker worker : workers) {
-            new Thread(() -> worker.start()).start();
-            ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + worker.getId(), null,
-                                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+    private void startServers() throws Exception {
+        for (MessageBroadcastSocketServer server : servers) {
+            new Thread(() -> server.start()).start();
+            ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + server.getId(),
+                                         null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
     }
 }

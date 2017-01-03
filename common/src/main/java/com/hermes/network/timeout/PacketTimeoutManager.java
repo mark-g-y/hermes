@@ -41,11 +41,11 @@ public class PacketTimeoutManager {
                 }
             }
         });
-        timeoutManagerThread.stop();
+        timeoutManagerThread.start();
     }
 
     public void stop() {
-        timeoutManagerThread.stop();
+        timeoutManagerThread.interrupt();
         for (PacketTimeoutNode timeoutNode : sentMessages) {
             timeoutNode.future.completeExceptionally(new java.util.concurrent.TimeoutException("Did not receive ack in time"));
         }

@@ -11,6 +11,8 @@ repositories {
 dependencies {
     testCompile group: 'org.testng', name: 'testng', version: '6.9.13.6'
     testCompile project(':test-common')
+    testCompile project(':producer')
+    testCompile project(':consumer')
 
     compile project(':common')
 }

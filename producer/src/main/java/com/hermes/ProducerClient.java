@@ -1,7 +1,9 @@
-package com.hermes.network;
+package com.hermes;
 
 import com.hermes.client.workerallocation.Worker;
+import com.hermes.network.SocketClient;
 import com.hermes.network.packet.AckPacket;
+import com.hermes.network.packet.InitPacket;
 import com.hermes.network.packet.Packet;
 import com.hermes.network.timeout.PacketTimeoutManager;
 import com.hermes.network.timeout.TimeoutConfig;
@@ -9,22 +11,28 @@ import com.hermes.network.timeout.TimeoutConfig;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-public class PacketSendClient extends SocketClient {
+public class ProducerClient extends SocketClient {
     private Worker serverWorker;
     private PacketTimeoutManager packetTimeoutManager;
     private Thread receiverThread;
     private CompletableFuture<Void> callback;
 
-    public PacketSendClient(Worker serverWorker, CompletableFuture<Void> callback) {
+
+    public ProducerClient(Worker serverWorker, CompletableFuture<Void> callback) {
         super(serverWorker.getUrl());
         this.serverWorker = serverWorker;
         this.callback = callback;
         this.packetTimeoutManager = new PacketTimeoutManager();
+        this.receiverThread = buildReceiverThread();
     }
 
     @Override
     protected void run() {
-        receiverThread = new Thread(() -> {
+        receiverThread.start();
+    }
+
+    private Thread buildReceiverThread() {
+        return new Thread(() -> {
             try {
                 Packet packet = readReply();
                 while (packet != null) {
@@ -41,7 +49,6 @@ public class PacketSendClient extends SocketClient {
                 callback.completeExceptionally(e);
             }
         });
-        receiverThread.start();
     }
 
     public void send(Packet packet, CompletableFuture<Void> sendPacketFuture) {

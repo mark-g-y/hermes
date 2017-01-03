@@ -3,6 +3,7 @@ package com.hermes;
 import com.hermes.client.workerallocation.Worker;
 import com.hermes.network.SocketClient;
 import com.hermes.network.packet.AckPacket;
+import com.hermes.network.packet.InitPacket;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.packet.Packet;
 
@@ -41,10 +42,13 @@ public class ConsumerClient extends SocketClient {
                 }
             } catch (IOException e) {
                 isConnected.set(false);
-                receiver.onDisconnect(e);
             }
         });
         receiverThread.start();
+    }
+
+    public void init(InitPacket initPacket) throws IOException {
+        send(initPacket);
     }
 
     public boolean isConnected() {

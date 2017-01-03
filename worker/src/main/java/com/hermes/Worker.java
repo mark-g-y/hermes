@@ -1,5 +1,7 @@
 package com.hermes;
 
+import com.hermes.network.SocketServer;
+import com.hermes.server.WorkerSocketServer;
 import com.hermes.zookeeper.ZKManager;
 import com.hermes.zookeeper.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -14,8 +16,8 @@ public class Worker {
     private int port;
     private String url;
 
-    private WorkerSocketServer workerSocketServer;
-    ZooKeeper zk;
+    private SocketServer workerSocketServer;
+    private ZooKeeper zk;
 
     public Worker(String host, int port) {
         this(UUID.randomUUID().toString(), host, port);
@@ -27,7 +29,7 @@ public class Worker {
         this.port = port;
         this.url = host + ":" + port;
 
-        zk = ZKManager.get();
+        this.zk = ZKManager.get();
     }
 
     public void start() {

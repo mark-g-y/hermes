@@ -1,10 +1,9 @@
 package com.hermes;
 
 import com.hermes.network.SocketServer;
-import com.hermes.network.packet.AckPacket;
-import com.hermes.network.packet.MessagePacket;
-import com.hermes.network.packet.Packet;
+import com.hermes.network.SocketServerHandlerThread;
 
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,23 +12,15 @@ public class MockWorker extends SocketServer {
 
     public MockWorker(int port) {
         super(port);
-        receivedMessages = new ArrayList<>();
-    }
-
-    @Override
-    protected void onClientConnected(HandlerThread thread) {
-        // do nothing
-    }
-
-    @Override
-    protected void onReceive(HandlerThread thread, Packet packet) {
-        // mock worker will simply respond with an ack
-        receivedMessages.add(((MessagePacket)packet).getMessage());
-        AckPacket ackPacket = new AckPacket(packet.MESSAGE_ID);
-        send(thread, ackPacket);
+        this.receivedMessages = new ArrayList<>();
     }
 
     public List<String> getReceivedMessages() {
         return receivedMessages;
+    }
+
+    @Override
+    protected SocketServerHandlerThread buildHandlerThread(Socket socket) {
+        return new MockWorkerThread(socket, receivedMessages);
     }
 }
