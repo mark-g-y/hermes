@@ -18,7 +18,7 @@ public class TestSendMessage extends UsesZooKeeperTest {
     private Consumer[] consumers;
 
     @Test(dataProvider = "clientServerCombos")
-    public void testMultipleClientsServersReceiveAndDeliverMessage(int numProducers, int numWorkers, int numConsumers)
+    public void testClientsServersReceiveAndDeliverMessage(int numProducers, int numWorkers, int numConsumers)
             throws Exception {
         workers = new Worker[numWorkers];
         com.hermes.client.workerallocation.Worker[] workerData = new com.hermes.client.workerallocation.Worker[numWorkers];

@@ -1,5 +1,6 @@
 package com.hermes;
 
+import com.hermes.client.ClientType;
 import com.hermes.network.packet.InitPacket;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.test.UsesZooKeeperTest;
@@ -37,7 +38,7 @@ public class TestWorkerHandleMessages extends UsesZooKeeperTest {
             sendClientFutures[i] = new CompletableFuture<>();
             sendClients[i] = new ProducerClient(workerData[i % workerData.length], sendClientFutures[i]);
             sendClients[i].start();
-            sendClients[i].send(new InitPacket(InitPacket.ClientType.PRODUCER, CHANNEL_BASE + i, Collections.emptyList()),
+            sendClients[i].send(new InitPacket(ClientType.PRODUCER_MAIN, CHANNEL_BASE + i),
                                 sendClientFutures[i]);
         }
 
@@ -58,7 +59,7 @@ public class TestWorkerHandleMessages extends UsesZooKeeperTest {
             };
             receiveClients[i] = new ConsumerClient(workerData[i % workerData.length], receiver);
             receiveClients[i].start();
-            receiveClients[i].init(new InitPacket(InitPacket.ClientType.CONSUMER, CHANNEL_BASE + i, Collections.emptyList()));
+            receiveClients[i].init(new InitPacket(ClientType.CONSUMER, CHANNEL_BASE + i));
         }
 
         String baseMessage = "testing";

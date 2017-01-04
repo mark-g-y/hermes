@@ -6,16 +6,18 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class SocketServer {
 
     protected Set<SocketServerHandlerThread> threads;
-    private volatile boolean shouldAcceptConnections = true;
+    private AtomicBoolean shouldAcceptConnections;
     private int port;
     private ServerSocket socket;
 
     public SocketServer(int port) {
         this.port = port;
+        this.shouldAcceptConnections = new AtomicBoolean(true);
         this.threads = new HashSet<>();
     }
 
@@ -26,7 +28,7 @@ public abstract class SocketServer {
             e.printStackTrace();
             System.exit(1);
         }
-        while(shouldAcceptConnections) {
+        while(shouldAcceptConnections.get()) {
             try {
                 SocketServerHandlerThread thread = buildHandlerThread(socket.accept());
                 threads.add(thread);
@@ -38,7 +40,7 @@ public abstract class SocketServer {
     }
 
     public synchronized void stop() {
-        shouldAcceptConnections = false;
+        shouldAcceptConnections.set(false);
         try {
             socket.close();
         } catch (IOException e) {

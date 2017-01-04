@@ -1,6 +1,8 @@
 package com.hermes.client.workerallocation;
 
-public class Worker {
+import java.io.Serializable;
+
+public class Worker implements Serializable {
     private String id;
     private String url;
 

@@ -1,13 +1,14 @@
 package com.hermes;
 
+import com.hermes.client.ClientType;
 import com.hermes.client.workerallocation.Worker;
 import com.hermes.client.workerallocation.WorkerManager;
 import com.hermes.network.packet.InitPacket;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.packet.Packet;
+import com.hermes.network.timeout.TimeoutConfig;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -18,45 +19,56 @@ import java.util.stream.Collectors;
 public class Producer {
     private static final int NUM_SEND_TRIES = 3;
     private String channelName;
+    private int numWorkerBackups;
     private List<ProducerClient> clients;
     private ReentrantReadWriteLock workerLock;
     private AtomicBoolean isStopped;
 
-    public Producer(String channelName) {
+    public Producer(String channelName, int numWorkerBackups) {
         this.channelName = channelName;
+        this.numWorkerBackups = numWorkerBackups;
         this.clients = new ArrayList<>();
         this.workerLock = new ReentrantReadWriteLock();
         this.isStopped = new AtomicBoolean(false);
+    }
+
+    public Producer(String channelName) {
+        this(channelName, 0);
     }
 
     public void start() {
         workerLock.writeLock().lock();
         List<Worker> workers;
         try {
-            // <TODO> add backups (i.e. select more than 1 worker, with extras being backup)
-            workers = WorkerManager.selectWorkers(WorkerManager.getAllWorkersForChannel(channelName), 1);
+            workers = WorkerManager.selectWorkers(WorkerManager.getAllWorkersForChannel(channelName), 1 + numWorkerBackups);
         } catch (Exception e) {
             workerLock.writeLock().unlock();
             e.printStackTrace();
+            // <TODO> figure out better way to handle not enough workers error
             return;
         }
-        for (Worker worker : workers) {
-            startClientForWorker(worker);
+        List<Worker> workerBackups = new ArrayList<>(workers);
+        workerBackups.remove(0);
+        startClientForWorker(ClientType.PRODUCER_MAIN, workers.get(0), workerBackups);
+        for (int i = 1; i < workers.size(); i++) {
+            workerBackups = new ArrayList<>(workerBackups);
+            workerBackups.remove(0);
+            startClientForWorker(ClientType.PRODUCER_BACKUP, workers.get(i), workerBackups);
         }
         workerLock.writeLock().unlock();
     }
 
-    private void startClientForWorker(Worker worker) {
+    private void startClientForWorker(ClientType clientType, Worker worker, List<Worker> workerBackups) {
         CompletableFuture<Void> packetSendClientCallback = new CompletableFuture<>();
-        ProducerClient client = new ProducerClient(worker, packetSendClientCallback);
+        ProducerClient client = new ProducerClient(clientType, worker, workerBackups, packetSendClientCallback);
         packetSendClientCallback.exceptionally((throwable) -> {
             handleConnectionLost(throwable, client);
             return null;
         });
         clients.add(client);
         client.start();
-        // <TODO> backups should not be an empty list once feature is implemented
-        client.send(new InitPacket(InitPacket.ClientType.PRODUCER, channelName, Collections.emptyList()),
+        client.send(new InitPacket(clientType, channelName, workerBackups,
+                                   TimeoutConfig.TIMEOUT * (clients.size() - workerBackups.size())),
                     packetSendClientCallback);
     }
 
@@ -68,12 +80,12 @@ public class Producer {
             workerLock.writeLock().lock();
             clients.remove(client);
             Worker newWorker = getNewWorker();
-            startClientForWorker(newWorker);
-            // <TODO> when multiple workers serving, need to send config messages to each here
+            startClientForWorker(client.getClientType(), newWorker, client.getWorkerBackups());
             workerLock.writeLock().unlock();
         } catch (Exception e) {
             workerLock.writeLock().unlock();
             e.printStackTrace();
+            // <TODO> figure out better way to handle not enough workers error
         }
     }
 
@@ -84,22 +96,23 @@ public class Producer {
 
     public void send(String message, ProducerCallback callback) {
         MessagePacket packet = new MessagePacket(message);
-        for (int i = 0; i < NUM_SEND_TRIES; i++) {
-            final int tryNum = i;
-            CompletableFuture sendPacketFuture = CompletableFuture.anyOf(sendPacketToAllClients(packet));
-            sendPacketFuture.thenApply((v) -> {
-                callback.onSuccess();
-                return null;
-            });
-            sendPacketFuture.exceptionally((throwable) -> {
-                if (tryNum >= NUM_SEND_TRIES) {
-                    callback.onFailure((Throwable)throwable);
-                } else {
-                    sendPacketToAllClients(packet);
-                }
-                return null;
-            });
-        }
+        send(packet, 0, callback);
+    }
+
+    private void send(Packet packet, int tryNum, ProducerCallback callback) {
+        CompletableFuture sendPacketFuture = CompletableFuture.anyOf(sendPacketToAllClients(packet));
+        sendPacketFuture.thenApply((v) -> {
+            callback.onSuccess();
+            return null;
+        });
+        sendPacketFuture.exceptionally((throwable) -> {
+            if (tryNum >= NUM_SEND_TRIES) {
+                callback.onFailure((Throwable)throwable);
+            } else {
+                send(packet, tryNum + 1, callback);
+            }
+            return null;
+        });
     }
 
     private CompletableFuture[] sendPacketToAllClients(Packet packet) {

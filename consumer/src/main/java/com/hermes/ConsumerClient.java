@@ -47,7 +47,7 @@ public class ConsumerClient extends SocketClient {
         receiverThread.start();
     }
 
-    public void init(InitPacket initPacket) throws IOException {
+    public void init(InitPacket initPacket) throws Exception {
         send(initPacket);
     }
 

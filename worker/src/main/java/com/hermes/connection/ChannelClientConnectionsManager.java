@@ -25,9 +25,13 @@ public class ChannelClientConnectionsManager {
     }
 
     public synchronized boolean remove(String channelName, SocketServerHandlerThread socketServerHandlerThread) {
+        boolean result = false;
         if (channelName != null && connections.containsKey(channelName)) {
-            return connections.get(channelName).remove(socketServerHandlerThread);
+            result = connections.get(channelName).remove(socketServerHandlerThread);
+            if (connections.get(channelName).isEmpty()) {
+                connections.remove(channelName);
+            }
         }
-        return false;
+        return result;
     }
 }
