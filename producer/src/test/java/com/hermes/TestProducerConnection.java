@@ -22,19 +22,10 @@ public class TestProducerConnection extends UsesZooKeeperTest {
     public void beforeMethod() throws Exception {
         super.beforeMethod();
 
-        mockWorker1 = new MockWorker(3000);
+        mockWorker1 = new MockWorker("workerA", 3000);
         new Thread(() -> mockWorker1.start()).start();
-        mockWorker2 = new MockWorker(3001);
+        mockWorker2 = new MockWorker("workerB", 3001);
         new Thread(() -> mockWorker2.start()).start();
-
-        ZKUtility.createIgnoreExists(zk, ZKPaths.WORKERS + "/" + "workerA", "localhost:3000".getBytes(),
-                                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-        ZKUtility.createIgnoreExists(zk, ZKPaths.WORKER_LOADS + "/" + "workerA", "0".getBytes(),
-                                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-        ZKUtility.createIgnoreExists(zk, ZKPaths.WORKERS + "/" + "workerB", "localhost:3001".getBytes(),
-                                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-        ZKUtility.createIgnoreExists(zk, ZKPaths.WORKER_LOADS + "/" + "workerB", "0".getBytes(),
-                                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
     }
 
     @Test

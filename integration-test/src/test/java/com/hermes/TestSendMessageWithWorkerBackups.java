@@ -99,7 +99,7 @@ public class TestSendMessageWithWorkerBackups extends UsesZooKeeperTest {
         zk.delete(ZKPaths.PARTITIONS + "/" + PARTITION + "/" + 0, -1);
         zk.delete(ZKPaths.WORKERS + "/0", -1);
         workers[0].stop();
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         producer.send(sentMessage, new ProducerCallback() {
             @Override

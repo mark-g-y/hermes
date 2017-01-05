@@ -1,5 +1,6 @@
 package com.hermes;
 
+import com.hermes.partition.Partition;
 import com.hermes.worker.WorkerManager;
 import com.hermes.test.UsesZooKeeperTest;
 import org.testng.Assert;
@@ -16,7 +17,7 @@ public class TestAssignWorkerToPartition extends UsesZooKeeperTest {
             new Thread(() -> worker.start()).start();
         }
 
-        String url = WorkerManager.selectWorkers(WorkerManager.getAllWorkersForChannel("foobar"), 1).get(0).getUrl();
+        String url = WorkerManager.selectWorkersForPartition(Partition.get("foobar"), 1).get(0).getUrl();
 
         Assert.assertEquals("localhost:3000", url);
     }
@@ -28,8 +29,8 @@ public class TestAssignWorkerToPartition extends UsesZooKeeperTest {
             new Thread(() -> worker.start()).start();
         }
 
-        String url = WorkerManager.selectWorkers(WorkerManager.getAllWorkersForChannel("foobar"), 1).get(0).getUrl();
-        String url2 = WorkerManager.selectWorkers(WorkerManager.getAllWorkersForChannel("foobar2"), 1).get(0).getUrl();
+        String url = WorkerManager.selectWorkersForPartition(Partition.get("foobar"), 1).get(0).getUrl();
+        String url2 = WorkerManager.selectWorkersForPartition(Partition.get("foobar2"), 1).get(0).getUrl();
 
         Assert.assertEquals("localhost:3001", url);
         Assert.assertEquals("localhost:3001", url2);

@@ -4,8 +4,6 @@ import com.hermes.connection.ChannelClientConnectionsManager;
 import com.hermes.network.SocketServerHandlerThread;
 import com.hermes.partition.Partition;
 import com.hermes.worker.WorkerManager;
-import com.hermes.worker.allocation.WorkerAllocator;
-import com.hermes.worker.metadata.Worker;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,13 +11,10 @@ import java.util.Iterator;
 import java.util.List;
 
 public class LoadRebalancer {
-    private WorkerAllocator workerAllocator;
     private ChannelClientConnectionsManager producerConnectionsManager;
 
     public LoadRebalancer(ChannelClientConnectionsManager producerConnectionsManager) {
         this.producerConnectionsManager = producerConnectionsManager;
-
-        this.workerAllocator = new WorkerAllocator();
     }
 
     public void rebalanceWorkers() {
@@ -27,12 +22,9 @@ public class LoadRebalancer {
         if (partition == null) {
             return;
         }
-
-        Worker newWorker = findNewWorkerForPartition(partition);
-        if (newWorker == null) {
+        if (!allocateNewWorkerForPartition(partition)) {
             return;
         }
-        workerAllocator.allocateToPartition(newWorker, partition);
 
         // remove 1/2 connections from current worker - client load balancing will connect to less heavily loaded workers
         disconnectConnectionsForPartition(partition, 0.5);
@@ -64,14 +56,14 @@ public class LoadRebalancer {
         return heaviestLoadPartition;
     }
 
-    private Worker findNewWorkerForPartition(String partition) {
+    private boolean allocateNewWorkerForPartition(String partition) {
         try {
-            List<Worker> existingWorkersForPartition = WorkerManager.getAllWorkersForPartition(partition);
-            return WorkerManager.selectWorkers(WorkerManager.getAllWorkers(), 1, existingWorkersForPartition).get(0);
+            WorkerManager.allocateWorkersForPartition(partition, 1, WorkerManager.getAllWorkersForPartition(partition));
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return false;
     }
 
     private void disconnectConnectionsForPartition(String partition, double percentToRemove) {

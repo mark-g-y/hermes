@@ -11,6 +11,9 @@ import com.hermes.worker.allocation.WorkerAllocator;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.worker.retrieve.state.FinishedGettingAllWorkers;
 import com.hermes.worker.retrieve.state.GettingAllWorkers;
+import com.hermes.worker.select.state.AllocatingNewWorkers;
+import com.hermes.worker.select.state.DoneSelecting;
+import com.hermes.worker.select.state.Selecting;
 import com.hermes.zookeeper.ZKPaths;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -21,6 +24,28 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public class WorkerManager {
+    public static void allocateWorkersForPartition(String partition, int numWorkers) {
+        allocateWorkersForPartition(partition, numWorkers, Collections.emptyList());
+    }
+
+    public static void allocateWorkersForPartition(String partition, int numWorkers, Collection<Worker> blackListed) {
+        List<Worker> workers;
+        try {
+            workers = WorkerManager.getAllWorkers();
+        } catch (Exception e) {
+            return;
+        }
+        Set<String> blackListedIds = blackListed.stream().map((worker) -> worker.getId()).collect(Collectors.toSet());
+        workers = workers.stream().filter((worker) -> !blackListedIds.contains(worker.getId())).collect(Collectors.toList());
+        WorkerAllocator workerAllocator = new WorkerAllocator();
+        int numAllocated = 0;
+        for (int i = 0; i < workers.size() && numAllocated < numWorkers; i++) {
+            if (workerAllocator.allocateToPartition(workers.get(i), partition)) {
+                numAllocated++;
+            }
+        }
+    }
+
     public static List<Worker> getAllWorkersForChannel(String channelName, Watcher workerWatcher) throws
                                                                                                   InterruptedException,
                                                                                                   ExecutionException {
@@ -69,27 +94,26 @@ public class WorkerManager {
         return workers;
     }
 
-    public static List<Worker> selectWorkers(List<Worker> workers, int numToSelect) {
-        return selectWorkers(workers, numToSelect, Collections.emptySet());
+    public static List<Worker> selectWorkersForPartition(String partition, int numToSelect) throws Exception {
+        return selectWorkersForPartition(partition, numToSelect, Collections.emptySet());
     }
 
-    public static List<Worker> selectWorkers(List<Worker> workers, int numToSelect, Collection<Worker> blacklisted) {
-        Set<String> blacklistedIds = blacklisted.stream().map((worker) -> worker.getId()).collect(Collectors.toSet());
-        int numCurrentBlacklisted = (int)workers.stream().filter((worker) -> blacklistedIds.contains(worker.getId())).count();
-        Set<Worker> selected = new HashSet<>();
-        if (numToSelect > workers.size() - numCurrentBlacklisted) {
-            throw new RuntimeException("Not enough workers to satisfy request");
-        }
-        Collections.sort(workers);
-        int numSelected = 0;
-        for (int i = 0; i < workers.size() && numSelected < numToSelect; i++) {
-            Worker worker = workers.get(i);
-            if (!blacklistedIds.contains(worker.getId())) {
-                numSelected++;
-                selected.add(worker);
-            }
-        }
-        return new ArrayList<>(selected);
+    public static List<Worker> selectWorkersForPartition(String partition, int numToSelect, Collection<Worker> blacklisted)
+            throws Exception {
+        List<Worker> workers = getAllWorkersForPartition(partition);
+        State defaultState = new Selecting();
+        State[] states = new State[] {new AllocatingNewWorkers(), new DoneSelecting(), defaultState};
+        Fsm fsm = new Fsm();
+        fsm.addStates(Arrays.asList(states));
+        fsm.getContext().attrs.put("workers", workers);
+        fsm.getContext().attrs.put("partition", partition);
+        fsm.getContext().attrs.put("blacklisted", blacklisted);
+        fsm.getContext().attrs.put("num_to_select", numToSelect);
+
+        CompletableFuture<Collection<Worker>> future = new CompletableFuture<>();
+        fsm.addTrigger(DoneSelecting.NAME, (context) -> future.complete((Collection<Worker>)context.attrs.get("selected_workers")));
+        fsm.run(defaultState);
+        return new ArrayList(future.get());
     }
 
     public static List<Worker> getWorkers(ZooKeeper zk, List<String> workerIds) {

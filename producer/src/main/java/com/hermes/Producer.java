@@ -1,6 +1,7 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
+import com.hermes.partition.Partition;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.worker.WorkerManager;
 import com.hermes.network.packet.InitPacket;
@@ -40,11 +41,10 @@ public class Producer {
         workerLock.writeLock().lock();
         List<Worker> workers;
         try {
-            workers = WorkerManager.selectWorkers(WorkerManager.getAllWorkersForChannel(channelName), 1 + numWorkerBackups);
+            workers = WorkerManager.selectWorkersForPartition(Partition.get(channelName), 1 + numWorkerBackups);
         } catch (Exception e) {
-            workerLock.writeLock().unlock();
             e.printStackTrace();
-            // <TODO> figure out better way to handle not enough workers error
+            System.exit(1);
             return;
         }
         List<Worker> workerBackups = new ArrayList<>(workers);
@@ -83,15 +83,14 @@ public class Producer {
             startClientForWorker(client.getClientType(), newWorker, client.getWorkerBackups());
             workerLock.writeLock().unlock();
         } catch (Exception e) {
-            workerLock.writeLock().unlock();
             e.printStackTrace();
-            // <TODO> figure out better way to handle not enough workers error
+            System.exit(1);
         }
     }
 
     private Worker getNewWorker() throws Exception {
         Set<Worker> existingWorkers = clients.stream().map((client) -> client.getServerWorker()).collect(Collectors.toSet());
-        return WorkerManager.selectWorkers(WorkerManager.getAllWorkersForChannel(channelName), 1, existingWorkers).get(0);
+        return WorkerManager.selectWorkersForPartition(Partition.get(channelName), 1, existingWorkers).get(0);
     }
 
     public void send(String message, ProducerCallback callback) {
