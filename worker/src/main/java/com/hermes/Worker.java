@@ -1,6 +1,7 @@
 package com.hermes;
 
 import com.hermes.network.SocketServer;
+import com.hermes.os.MemoryUsage;
 import com.hermes.server.WorkerSocketServer;
 import com.hermes.zookeeper.ZKManager;
 import com.hermes.zookeeper.ZKPaths;
@@ -45,6 +46,8 @@ public class Worker {
     private void createWorkerInZooKeeper() {
         try {
             zk.create(ZKPaths.WORKERS + "/" + id, url.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+            zk.create(ZKPaths.WORKER_LOADS + "/" + id, Double.toString(MemoryUsage.getPercentage()).getBytes(),
+                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         } catch (Exception e) {
             System.out.println("Error - worker ID already exists");
         }

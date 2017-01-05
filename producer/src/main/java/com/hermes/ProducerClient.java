@@ -1,7 +1,7 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
-import com.hermes.client.workerallocation.Worker;
+import com.hermes.worker.metadata.Worker;
 import com.hermes.network.SocketClient;
 import com.hermes.network.packet.AckPacket;
 import com.hermes.network.packet.Packet;

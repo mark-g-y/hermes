@@ -1,7 +1,7 @@
 package com.hermes.connection;
 
 import com.hermes.WorkerClient;
-import com.hermes.client.workerallocation.Worker;
+import com.hermes.worker.metadata.Worker;
 
 import java.util.HashMap;
 

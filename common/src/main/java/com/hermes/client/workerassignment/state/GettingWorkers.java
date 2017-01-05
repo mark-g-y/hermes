@@ -1,6 +1,7 @@
-package com.hermes.client.workerallocation.state;
+package com.hermes.client.workerassignment.state;
 
-import com.hermes.client.workerallocation.Worker;
+import com.hermes.worker.WorkerManager;
+import com.hermes.worker.metadata.Worker;
 import com.hermes.fsm.Context;
 import com.hermes.fsm.State;
 import com.hermes.zookeeper.ZKManager;
@@ -8,7 +9,6 @@ import com.hermes.zookeeper.ZKPaths;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class GettingWorkers implements State {
@@ -28,28 +28,15 @@ public class GettingWorkers implements State {
         try {
             List<String> workerIds = zk.getChildren(ZKPaths.PARTITIONS + "/" + partition, workerWatcher);
             if (workerIds.size() == 0) {
-                return context.states.getByName(AssigningWorker.NAME);
+                return context.states.getByName(AllocatingWorker.NAME);
             }
-            List<Worker> workers = getWorkers(workerIds);
+            List<Worker> workers = WorkerManager.getWorkers(zk, workerIds);
             context.attrs.put("workers", workers);
-            return context.states.getByName(FinishedAllocatingWorkers.NAME);
+            return context.states.getByName(FinishedAssigningWorkers.NAME);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return context.states.getByName(GettingWorkers.NAME);
-    }
-
-    private List<Worker> getWorkers(List<String> workerIds) {
-        List<Worker> workers = new ArrayList<>();
-        for (String workerId : workerIds) {
-            try {
-                String url = new String(zk.getData(ZKPaths.WORKERS + "/" + workerId, null, null));
-                workers.add(new Worker(workerId, url));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return workers;
     }
 
     @Override

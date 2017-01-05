@@ -1,6 +1,6 @@
 package com.hermes.message;
 
-import com.hermes.client.workerallocation.Worker;
+import com.hermes.worker.metadata.Worker;
 import com.hermes.network.packet.MessagePacket;
 
 import java.util.List;

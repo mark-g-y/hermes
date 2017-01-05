@@ -1,7 +1,7 @@
 package com.hermes.network.packet;
 
 import com.hermes.client.ClientType;
-import com.hermes.client.workerallocation.Worker;
+import com.hermes.worker.metadata.Worker;
 import com.hermes.network.timeout.TimeoutConfig;
 
 import java.util.Collections;

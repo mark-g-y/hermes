@@ -1,6 +1,6 @@
 package com.hermes;
 
-import com.hermes.client.workerallocation.WorkerManager;
+import com.hermes.worker.WorkerManager;
 import com.hermes.test.UsesZooKeeperTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;

@@ -12,7 +12,7 @@ public class DistributedGlobalLock {
     private ZooKeeper zk;
     private String lockPath;
 
-    public DistributedGlobalLock(ZooKeeper zk) throws Exception {
+    public DistributedGlobalLock(ZooKeeper zk) {
         this.zk = zk;
     }
 

@@ -2,6 +2,8 @@ package com.hermes.server;
 
 import com.hermes.connection.ChannelClientConnectionsManager;
 import com.hermes.connection.WorkerToWorkerConnectionsManager;
+import com.hermes.loadbalance.LoadRebalancer;
+import com.hermes.loadbalance.MonitorLoadThread;
 import com.hermes.message.ChannelMessageQueues;
 import com.hermes.network.SocketServer;
 import com.hermes.network.SocketServerHandlerThread;
@@ -17,6 +19,8 @@ public class WorkerSocketServer extends SocketServer {
     private ChannelClientConnectionsManager consumerConnectionsManager;
     private WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager;
 
+    private MonitorLoadThread monitorLoadThread;
+
     public WorkerSocketServer(String id, int port) {
         super(port);
         this.id = id;
@@ -25,6 +29,20 @@ public class WorkerSocketServer extends SocketServer {
         this.producerConnectionsManager = new ChannelClientConnectionsManager();
         this.consumerConnectionsManager = new ChannelClientConnectionsManager();
         this.workerToWorkerConnectionsManager = new WorkerToWorkerConnectionsManager();
+
+        this.monitorLoadThread = new MonitorLoadThread(id, new LoadRebalancer(producerConnectionsManager));
+    }
+
+    @Override
+    public void start() {
+        monitorLoadThread.start();
+        super.start();
+    }
+
+    @Override
+    public void stop() {
+        monitorLoadThread.interrupt();
+        super.stop();
     }
 
     @Override

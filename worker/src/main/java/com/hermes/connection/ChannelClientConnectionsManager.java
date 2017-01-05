@@ -2,6 +2,8 @@ package com.hermes.connection;
 
 import com.hermes.network.SocketServerHandlerThread;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -15,6 +17,15 @@ public class ChannelClientConnectionsManager {
 
     public List<SocketServerHandlerThread> getConnections(String channelName) {
         return connections.get(channelName);
+    }
+
+    public List<String> getChannels() {
+        List<String> channels = new ArrayList<>();
+        Iterator<String> iterator = connections.keySet().iterator();
+        while (iterator.hasNext()) {
+            channels.add(iterator.next());
+        }
+        return channels;
     }
 
     public synchronized void add(String channelName, SocketServerHandlerThread socketServerHandlerThread) {

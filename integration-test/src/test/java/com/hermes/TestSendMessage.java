@@ -21,10 +21,10 @@ public class TestSendMessage extends UsesZooKeeperTest {
     public void testClientsServersReceiveAndDeliverMessage(int numProducers, int numWorkers, int numConsumers)
             throws Exception {
         workers = new Worker[numWorkers];
-        com.hermes.client.workerallocation.Worker[] workerData = new com.hermes.client.workerallocation.Worker[numWorkers];
+        com.hermes.worker.metadata.Worker[] workerData = new com.hermes.worker.metadata.Worker[numWorkers];
         for (int i = 0; i < workers.length; i++) {
             workers[i] = new Worker(Integer.toString(i), "localhost", 3000 + i);
-            workerData[i] = new com.hermes.client.workerallocation.Worker(Integer.toString(i), "localhost:" + (3000 + i));
+            workerData[i] = new com.hermes.worker.metadata.Worker(Integer.toString(i), "localhost:" + (3000 + i), 0);
         }
         startWorkers();
 

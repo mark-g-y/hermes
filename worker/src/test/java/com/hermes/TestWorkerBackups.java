@@ -25,10 +25,10 @@ public class TestWorkerBackups extends UsesZooKeeperTest {
     @Test
     public void testWorkerFailure() throws Exception {
         workers = new Worker[3];
-        com.hermes.client.workerallocation.Worker[] workerData = new com.hermes.client.workerallocation.Worker[workers.length];
+        com.hermes.worker.metadata.Worker[] workerData = new com.hermes.worker.metadata.Worker[workers.length];
         for (int i = 0; i < workers.length; i++) {
             workers[i] = new Worker(Integer.toString(i), "localhost", 3000 + i);
-            workerData[i] = new com.hermes.client.workerallocation.Worker(Integer.toString(i), "localhost:" + (3000 + i));
+            workerData[i] = new com.hermes.worker.metadata.Worker(Integer.toString(i), "localhost:" + (3000 + i), 0);
         }
         startWorkers();
 
@@ -37,7 +37,7 @@ public class TestWorkerBackups extends UsesZooKeeperTest {
 
         sendClients = new ProducerClient[3];
         CompletableFuture<Void> sendCallback = new CompletableFuture<>(); // dummy variable - won't do anything
-        List<com.hermes.client.workerallocation.Worker> backups = new ArrayList(Arrays.asList(workerData));
+        List<com.hermes.worker.metadata.Worker> backups = new ArrayList(Arrays.asList(workerData));
         backups.remove(0);
         sendClients[0] = new ProducerClient(ClientType.PRODUCER_MAIN, workerData[0], backups, sendCallback);
         sendClients[0].start();

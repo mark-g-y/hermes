@@ -20,6 +20,7 @@ public class Initializer {
         try {
             ZKUtility.createIgnoreExists(zk, ZKPaths.ROOT, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             ZKUtility.createIgnoreExists(zk, ZKPaths.WORKERS, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            ZKUtility.createIgnoreExists(zk, ZKPaths.WORKER_LOADS, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             ZKUtility.createIgnoreExists(zk, ZKPaths.ASSIGNING_WORKERS, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             ZKUtility.createIgnoreExists(zk, ZKPaths.EDIT_PARTITIONS, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);

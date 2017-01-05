@@ -33,6 +33,8 @@ public class MessageBroadcastSocketServer extends SocketServer {
         try {
             ZKUtility.createIgnoreExists(ZKManager.get(), ZKPaths.WORKERS + "/" + id, ("localhost:" + port).getBytes(),
                                          ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+            ZKUtility.createIgnoreExists(ZKManager.get(), ZKPaths.WORKER_LOADS + "/" + id, ("0").getBytes(),
+                                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         } catch (Exception e) {
             e.printStackTrace();
         }

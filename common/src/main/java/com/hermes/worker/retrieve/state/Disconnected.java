@@ -1,4 +1,4 @@
-package com.hermes.client.workerallocation.state;
+package com.hermes.worker.retrieve.state;
 
 import com.hermes.fsm.Context;
 import com.hermes.fsm.State;
@@ -8,7 +8,7 @@ public class Disconnected implements State {
 
     @Override
     public State execute(Context context) {
-        return context.states.getByName(GettingWorkers.NAME);
+        return context.states.getByName(GettingAllWorkers.NAME);
     }
 
     @Override

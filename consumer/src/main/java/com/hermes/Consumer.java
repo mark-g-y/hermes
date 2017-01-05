@@ -1,12 +1,11 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
-import com.hermes.client.workerallocation.Worker;
-import com.hermes.client.workerallocation.WorkerManager;
+import com.hermes.worker.metadata.Worker;
+import com.hermes.worker.WorkerManager;
 import com.hermes.network.packet.InitPacket;
 import org.apache.zookeeper.Watcher;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

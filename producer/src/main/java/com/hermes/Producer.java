@@ -1,8 +1,8 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
-import com.hermes.client.workerallocation.Worker;
-import com.hermes.client.workerallocation.WorkerManager;
+import com.hermes.worker.metadata.Worker;
+import com.hermes.worker.WorkerManager;
 import com.hermes.network.packet.InitPacket;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.packet.Packet;
@@ -69,7 +69,7 @@ public class Producer {
         client.start();
         client.send(new InitPacket(clientType, channelName, workerBackups,
                                    TimeoutConfig.TIMEOUT * (clients.size() - workerBackups.size())),
-                    packetSendClientCallback);
+                    new CompletableFuture<>());
     }
 
     private void handleConnectionLost(Throwable th, ProducerClient client) {

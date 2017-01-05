@@ -23,6 +23,7 @@ public class ZKManager {
 
     private void connectZooKeeper(final String zookeeperUrl) {
         try {
+            // <TODO> replace zk with ZKManager.get() in code, since reconnected zk is new instance
             zk = new ZooKeeper(zookeeperUrl, 30000, new ReconnectWatcher(() -> connectZooKeeper(zookeeperUrl)));
         } catch (IOException e) {
             e.printStackTrace();

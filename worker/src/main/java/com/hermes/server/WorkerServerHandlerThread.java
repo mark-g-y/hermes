@@ -2,7 +2,7 @@ package com.hermes.server;
 
 import com.hermes.WorkerClient;
 import com.hermes.client.ClientType;
-import com.hermes.client.workerallocation.Worker;
+import com.hermes.worker.metadata.Worker;
 import com.hermes.connection.ChannelClientConnectionsManager;
 import com.hermes.connection.WorkerToWorkerConnectionsManager;
 import com.hermes.message.ChannelMessageQueues;
@@ -90,9 +90,6 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
     private void assignPartition(AssignPartitionPacket packet) {
         ZooKeeper zk = ZKManager.get();
         try {
-            // <TODO> decide whether maintain list of channels this worker is responsible for? only use case is if
-            // <TODO> same worker is reassigned to different partition. The ephermeral won't die because worker is still
-            // <TODO> alive, but worker should be removed from partition
             ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + packet.getPartition() + "/" + id, null,
                                          ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
             send(new AckPacket(packet.MESSAGE_ID));
@@ -132,16 +129,20 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
             });
             packetTimeoutManager.add(packet.MESSAGE_ID, ackTimeout, ackFuture);
         }
-        try {
-            send(new AckPacket(packet.MESSAGE_ID));
-        } catch (IOException e) {
-            // failures will be handled by backups
-            e.printStackTrace();
-        }
+        sendAck(packet.MESSAGE_ID);
     }
 
     private void handleAck(AckPacket packet) {
         packetTimeoutManager.messageReceived(packet.ackMessageId);
+    }
+
+    private void sendAck(String messageId) {
+        try {
+            send(new AckPacket(messageId));
+        } catch (IOException e) {
+            // failures will be handled by backups
+            e.printStackTrace();
+        }
     }
 
     private void createSendMessagesThread() {
