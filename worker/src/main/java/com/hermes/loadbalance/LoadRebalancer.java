@@ -1,6 +1,6 @@
 package com.hermes.loadbalance;
 
-import com.hermes.connection.ChannelClientConnectionsManager;
+import com.hermes.connection.ProducerConnectionsManager;
 import com.hermes.network.SocketServerHandlerThread;
 import com.hermes.partition.Partition;
 import com.hermes.worker.WorkerManager;
@@ -11,9 +11,9 @@ import java.util.Iterator;
 import java.util.List;
 
 public class LoadRebalancer {
-    private ChannelClientConnectionsManager producerConnectionsManager;
+    private ProducerConnectionsManager producerConnectionsManager;
 
-    public LoadRebalancer(ChannelClientConnectionsManager producerConnectionsManager) {
+    public LoadRebalancer(ProducerConnectionsManager producerConnectionsManager) {
         this.producerConnectionsManager = producerConnectionsManager;
     }
 

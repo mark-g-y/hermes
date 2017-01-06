@@ -2,10 +2,11 @@ package com.hermes.server;
 
 import com.hermes.WorkerClient;
 import com.hermes.client.ClientType;
+import com.hermes.connection.ConsumerConnectionsManager;
 import com.hermes.worker.metadata.Worker;
-import com.hermes.connection.ChannelClientConnectionsManager;
+import com.hermes.connection.ProducerConnectionsManager;
 import com.hermes.connection.WorkerToWorkerConnectionsManager;
-import com.hermes.message.ChannelMessageQueues;
+import com.hermes.message.MessageQueues;
 import com.hermes.message.Message;
 import com.hermes.network.SocketServerHandlerThread;
 import com.hermes.network.packet.*;
@@ -27,27 +28,28 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class WorkerServerHandlerThread extends SocketServerHandlerThread {
     private String id;
     private String channelName;
+    private String groupName;
     private ClientType clientType;
     private List<Worker> backups;
     private long ackTimeout;
-    private ChannelMessageQueues channelMessageQueues;
+    private MessageQueues messageQueues;
     private LinkedBlockingQueue<Message> messageQueue;
     private PacketTimeoutManager packetTimeoutManager;
-    private ChannelClientConnectionsManager producerConnectionsManager;
-    private ChannelClientConnectionsManager consumerConnectionsManager;
+    private ProducerConnectionsManager producerConnectionsManager;
+    private ConsumerConnectionsManager consumerConnectionsManager;
     private WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager;
     private Thread sendMessagesThread;
 
     public WorkerServerHandlerThread(Socket socket,
                                      String id,
-                                     ChannelMessageQueues channelMessageQueues,
+                                     MessageQueues messageQueues,
                                      PacketTimeoutManager packetTimeoutManager,
-                                     ChannelClientConnectionsManager producerConnectionsManager,
-                                     ChannelClientConnectionsManager consumerConnectionsManager,
+                                     ProducerConnectionsManager producerConnectionsManager,
+                                     ConsumerConnectionsManager consumerConnectionsManager,
                                      WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager) {
         super(socket);
         this.id = id;
-        this.channelMessageQueues = channelMessageQueues;
+        this.messageQueues = messageQueues;
         this.packetTimeoutManager = packetTimeoutManager;
         this.producerConnectionsManager = producerConnectionsManager;
         this.consumerConnectionsManager = consumerConnectionsManager;
@@ -103,16 +105,17 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
         removeFromWorkerToClientConnections();
 
         channelName = packet.getChannelName();
-        messageQueue = channelMessageQueues.getQueueCreateIfNotExists(channelName);
 
-        backups = packet.getBackups();
         ackTimeout = packet.getToleratedTimeout();
 
         clientType = packet.getClientType();
         if (clientType == ClientType.PRODUCER_MAIN || clientType == ClientType.PRODUCER_BACKUP) {
+            backups = ((ProducerInitPacket)packet).getBackups();
             producerConnectionsManager.add(packet.getChannelName(), this);
         } else if (clientType == ClientType.CONSUMER) {
-            consumerConnectionsManager.add(packet.getChannelName(), this);
+            groupName = ((ConsumerInitPacket)packet).getGroupName();
+            messageQueue = messageQueues.getQueueCreateIfNotExists(channelName, groupName);
+            consumerConnectionsManager.add(packet.getChannelName(), groupName, this);
             createSendMessagesThread();
             sendMessagesThread.start();
         }
@@ -120,11 +123,11 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
 
     private void handleMessage(MessagePacket packet) {
         if (clientType == ClientType.PRODUCER_MAIN) {
-            channelMessageQueues.add(channelName, new Message(packet, backups));
+            messageQueues.add(channelName, new Message(packet, backups));
         } else if (clientType == ClientType.PRODUCER_BACKUP) {
             CompletableFuture<Void> ackFuture = new CompletableFuture<>();
             ackFuture.exceptionally((throwable) -> {
-                channelMessageQueues.add(channelName, new Message(packet, backups));
+                messageQueues.add(channelName, new Message(packet, backups));
                 return null;
             });
             packetTimeoutManager.add(packet.MESSAGE_ID, ackTimeout, ackFuture);
@@ -179,6 +182,7 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
 
     private void removeFromWorkerToClientConnections() {
         producerConnectionsManager.remove(channelName, this);
-        consumerConnectionsManager.remove(channelName, this);
+        consumerConnectionsManager.remove(channelName, groupName, this);
+        messageQueues.removeUnused(channelName, groupName, consumerConnectionsManager);
     }
 }

@@ -1,6 +1,7 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
+import com.hermes.network.packet.ProducerInitPacket;
 import com.hermes.partition.Partition;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.worker.WorkerManager;
@@ -67,8 +68,8 @@ public class Producer {
         });
         clients.add(client);
         client.start();
-        client.send(new InitPacket(clientType, channelName, workerBackups,
-                                   TimeoutConfig.TIMEOUT * (clients.size() - workerBackups.size())),
+        client.send(new ProducerInitPacket(clientType, channelName, workerBackups,
+                                           TimeoutConfig.TIMEOUT * (clients.size() - workerBackups.size())),
                     new CompletableFuture<>());
     }
 

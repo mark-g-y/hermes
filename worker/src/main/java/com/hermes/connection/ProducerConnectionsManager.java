@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ChannelClientConnectionsManager {
+public class ProducerConnectionsManager {
     private ConcurrentHashMap<String, CopyOnWriteArrayList<SocketServerHandlerThread>> connections;
     
-    public ChannelClientConnectionsManager() {
+    public ProducerConnectionsManager() {
         connections = new ConcurrentHashMap<>();
     }
 

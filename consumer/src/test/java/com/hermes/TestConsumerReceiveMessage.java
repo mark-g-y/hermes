@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
     private static final String CHANNEL = "foobar";
+    private static final String CONSUMER_GROUP = "A";
     private static final String PARTITION = Partition.get(CHANNEL);
     private static final int TIMEOUT = 3000;
 
@@ -31,7 +32,7 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
         startServers();
 
         CompletableFuture<String> receiveMessageFuture = new CompletableFuture<>();
-        consumer = new Consumer(CHANNEL, new Receiver() {
+        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
             @Override
             public void onMessageReceived(String message) {
                 receiveMessageFuture.complete(message);
@@ -69,7 +70,7 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
         for (int i = 0;i < receiveMessageFutures.length; i++) {
             receiveMessageFutures[i] = new CompletableFuture<>();
         }
-        consumer = new Consumer(CHANNEL, new Receiver() {
+        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
             @Override
             public void onMessageReceived(String message) {
                 receiveMessageFutures[completedIndex.getAndIncrement()].complete(message);

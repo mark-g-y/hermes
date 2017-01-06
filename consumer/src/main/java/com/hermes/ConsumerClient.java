@@ -1,11 +1,8 @@
 package com.hermes;
 
+import com.hermes.network.packet.*;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.network.SocketClient;
-import com.hermes.network.packet.AckPacket;
-import com.hermes.network.packet.InitPacket;
-import com.hermes.network.packet.MessagePacket;
-import com.hermes.network.packet.Packet;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +44,7 @@ public class ConsumerClient extends SocketClient {
         receiverThread.start();
     }
 
-    public void init(InitPacket initPacket) throws Exception {
+    public void init(ConsumerInitPacket initPacket) throws Exception {
         send(initPacket);
     }
 
