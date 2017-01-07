@@ -1,44 +1,27 @@
 package com.hermes.server;
 
-import com.hermes.WorkerClient;
 import com.hermes.client.ClientType;
 import com.hermes.connection.ConsumerConnectionsManager;
-import com.hermes.worker.metadata.Worker;
 import com.hermes.connection.ProducerConnectionsManager;
-import com.hermes.connection.WorkerToWorkerConnectionsManager;
 import com.hermes.message.MessageQueues;
-import com.hermes.message.Message;
+import com.hermes.server.packethandler.*;
+import com.hermes.connection.WorkerToWorkerConnectionsManager;
 import com.hermes.network.SocketServerHandlerThread;
 import com.hermes.network.packet.*;
 import com.hermes.network.timeout.PacketTimeoutManager;
-import com.hermes.network.timeout.TimeoutConfig;
-import com.hermes.zookeeper.ZKManager;
-import com.hermes.zookeeper.ZKPaths;
-import com.hermes.zookeeper.ZKUtility;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 
-import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
 
-public class WorkerServerHandlerThread extends SocketServerHandlerThread {
+public class WorkerServerHandlerThread extends SocketServerHandlerThread implements ServerToClientSender {
+    private PacketHandler packetHandler;
     private String id;
     private String channelName;
     private String groupName;
-    private ClientType clientType;
-    private List<Worker> backups;
-    private long ackTimeout;
     private MessageQueues messageQueues;
-    private LinkedBlockingQueue<Message> messageQueue;
     private PacketTimeoutManager packetTimeoutManager;
     private ProducerConnectionsManager producerConnectionsManager;
     private ConsumerConnectionsManager consumerConnectionsManager;
     private WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager;
-    private Thread sendMessagesThread;
 
     public WorkerServerHandlerThread(Socket socket,
                                      String id,
@@ -48,13 +31,13 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
                                      ConsumerConnectionsManager consumerConnectionsManager,
                                      WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager) {
         super(socket);
+        this.packetHandler = new DefaultPacketHandler(id, packetTimeoutManager, this);
         this.id = id;
         this.messageQueues = messageQueues;
         this.packetTimeoutManager = packetTimeoutManager;
         this.producerConnectionsManager = producerConnectionsManager;
         this.consumerConnectionsManager = consumerConnectionsManager;
         this.workerToWorkerConnectionsManager = workerToWorkerConnectionsManager;
-        createSendMessagesThread();
     }
 
     @Override
@@ -67,16 +50,16 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
         // handle received packet
         switch (packet.TYPE) {
             case ASSIGN_PARTITION:
-                assignPartition((AssignPartitionPacket)packet);
+                packetHandler.onAssignPartition((AssignPartitionPacket)packet);
                 break;
             case INIT:
                 handleInit((InitPacket)packet);
                 break;
             case MESSAGE:
-                handleMessage((MessagePacket)packet);
+                packetHandler.onMessage((MessagePacket)packet);
                 break;
             case ACK:
-                handleAck((AckPacket)packet);
+                packetHandler.onAck((AckPacket)packet);
                 break;
             default:
                 System.out.println("Error - received unrecognized packet type " + packet.TYPE);
@@ -85,99 +68,31 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread {
 
     @Override
     protected void onDisconnect() {
-        sendMessagesThread.interrupt();
+        packetHandler.stop();
         removeFromWorkerToClientConnections();
     }
 
-    private void assignPartition(AssignPartitionPacket packet) {
-        ZooKeeper zk = ZKManager.get();
-        try {
-            ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + packet.getPartition() + "/" + id, null,
-                                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-            send(new AckPacket(packet.MESSAGE_ID));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void handleInit(InitPacket packet) {
-        sendMessagesThread.interrupt();
+        packetHandler.stop();
         removeFromWorkerToClientConnections();
 
         channelName = packet.getChannelName();
 
-        ackTimeout = packet.getToleratedTimeout();
-
-        clientType = packet.getClientType();
-        if (clientType == ClientType.PRODUCER_MAIN || clientType == ClientType.PRODUCER_BACKUP) {
-            backups = ((ProducerInitPacket)packet).getBackups();
-            producerConnectionsManager.add(packet.getChannelName(), this);
-        } else if (clientType == ClientType.CONSUMER) {
+        if (packet.getClientType() == ClientType.CONSUMER) {
             groupName = ((ConsumerInitPacket)packet).getGroupName();
-            messageQueue = messageQueues.getQueueCreateIfNotExists(channelName, groupName);
-            consumerConnectionsManager.add(packet.getChannelName(), groupName, this);
-            createSendMessagesThread();
-            sendMessagesThread.start();
+            consumerConnectionsManager.add(channelName, groupName, this);
+            packetHandler = new ConsumerPacketHandler(id, messageQueues.getQueueCreateIfNotExists(channelName, groupName),
+                                                      packetTimeoutManager, workerToWorkerConnectionsManager, this);
+        } else if (packet.getClientType() == ClientType.PRODUCER_MAIN) {
+            producerConnectionsManager.add(channelName, this);
+            packetHandler = new MainProducerPacketHandler(id, channelName, ((ProducerInitPacket)packet).getBackups(),
+                                                          messageQueues, packetTimeoutManager, this);
+        } else if (packet.getClientType() == ClientType.PRODUCER_BACKUP) {
+            producerConnectionsManager.add(channelName, this);
+            packetHandler = new BackupProducerPacketHandler(id, channelName, ((ProducerInitPacket)packet).getBackups(),
+                                                            packet.getToleratedTimeout(), messageQueues,
+                                                            packetTimeoutManager, this);
         }
-    }
-
-    private void handleMessage(MessagePacket packet) {
-        if (clientType == ClientType.PRODUCER_MAIN) {
-            messageQueues.add(channelName, new Message(packet, backups));
-        } else if (clientType == ClientType.PRODUCER_BACKUP) {
-            CompletableFuture<Void> ackFuture = new CompletableFuture<>();
-            ackFuture.exceptionally((throwable) -> {
-                messageQueues.add(channelName, new Message(packet, backups));
-                return null;
-            });
-            packetTimeoutManager.add(packet.MESSAGE_ID, ackTimeout, ackFuture);
-        }
-        sendAck(packet.MESSAGE_ID);
-    }
-
-    private void handleAck(AckPacket packet) {
-        packetTimeoutManager.messageReceived(packet.ackMessageId);
-    }
-
-    private void sendAck(String messageId) {
-        try {
-            send(new AckPacket(messageId));
-        } catch (IOException e) {
-            // failures will be handled by backups
-            e.printStackTrace();
-        }
-    }
-
-    private void createSendMessagesThread() {
-        this.sendMessagesThread = new Thread(() -> {
-            try {
-                while (true) {
-                    Message message = messageQueue.take();
-                    MessagePacket packet = message.getMessagePacket();
-                    List<Worker> backups = message.getBackups();
-                    CompletableFuture<Void> messageAckFuture = new CompletableFuture<>();
-                    messageAckFuture.thenApply((v) -> {
-                        for (Worker worker : backups) {
-                            WorkerClient client = workerToWorkerConnectionsManager.getConnectionCreateIfNotExists(worker);
-                            try {
-                                client.send(new AckPacket(packet.MESSAGE_ID));
-                            } catch (IOException e) {
-                                workerToWorkerConnectionsManager.removeConnection(worker);
-                            }
-                        }
-                        return null;
-                    });
-                    packetTimeoutManager.add(packet.MESSAGE_ID, TimeoutConfig.TIMEOUT, messageAckFuture);
-                    try {
-                        send(packet);
-                    } catch (IOException e) {
-                        // do nothing - backups will handle failure scenario
-                    }
-                }
-            } catch (InterruptedException e) {
-                // should stop if interrupted
-            }
-        });
     }
 
     private void removeFromWorkerToClientConnections() {

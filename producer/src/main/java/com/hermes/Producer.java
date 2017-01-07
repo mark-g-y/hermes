@@ -5,7 +5,6 @@ import com.hermes.network.packet.ProducerInitPacket;
 import com.hermes.partition.Partition;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.worker.WorkerManager;
-import com.hermes.network.packet.InitPacket;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.packet.Packet;
 import com.hermes.network.timeout.TimeoutConfig;
@@ -56,6 +55,7 @@ public class Producer {
             workerBackups.remove(0);
             startClientForWorker(ClientType.PRODUCER_BACKUP, workers.get(i), workerBackups);
         }
+        sendInitPackets();
         workerLock.writeLock().unlock();
     }
 
@@ -68,9 +68,6 @@ public class Producer {
         });
         clients.add(client);
         client.start();
-        client.send(new ProducerInitPacket(clientType, channelName, workerBackups,
-                                           TimeoutConfig.TIMEOUT * (clients.size() - workerBackups.size())),
-                    new CompletableFuture<>());
     }
 
     private void handleConnectionLost(Throwable th, ProducerClient client) {
@@ -81,11 +78,27 @@ public class Producer {
             workerLock.writeLock().lock();
             clients.remove(client);
             Worker newWorker = getNewWorker();
+            updateWorkerBackups(client.getServerWorker(), newWorker);
             startClientForWorker(client.getClientType(), newWorker, client.getWorkerBackups());
+            sendInitPackets();
             workerLock.writeLock().unlock();
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+    private void updateWorkerBackups(Worker oldBackup, Worker newBackup) {
+        for (ProducerClient client : clients) {
+            client.replaceWorkerBackup(oldBackup, newBackup);
+        }
+    }
+
+    private void sendInitPackets() {
+        for (ProducerClient client : clients) {
+            client.send(new ProducerInitPacket(client.getClientType(), channelName, client.getWorkerBackups(),
+                                               TimeoutConfig.TIMEOUT * (clients.size() - client.getWorkerBackups().size())),
+                        new CompletableFuture<>());
         }
     }
 

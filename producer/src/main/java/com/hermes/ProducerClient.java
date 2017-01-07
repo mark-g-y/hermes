@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class ProducerClient extends SocketClient {
     private ClientType clientType;
@@ -81,6 +82,12 @@ public class ProducerClient extends SocketClient {
 
     public List<Worker> getWorkerBackups() {
         return workerBackups;
+    }
+
+    public void replaceWorkerBackup(Worker oldBackup, Worker newBackup) {
+        workerBackups = workerBackups.stream().filter((backup) -> !backup.getId().equals(oldBackup.getId()))
+                .collect(Collectors.toList());
+        workerBackups.add(newBackup);
     }
 
     public void stop() {
