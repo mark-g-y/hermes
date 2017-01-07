@@ -5,11 +5,11 @@ import com.hermes.network.packet.Packet;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ConnectionCounterWorkerThread extends AbstractMockWorkerThread {
+public class ConnectionCounterWorkerHandler extends AbstractMockWorkerHandler {
     private AtomicInteger numPreviousAndCurrentConnections;
 
-    public ConnectionCounterWorkerThread(String id, int port, Socket socket,
-                                         AtomicInteger numPreviousAndCurrentConnections) {
+    public ConnectionCounterWorkerHandler(String id, int port, Socket socket,
+                                          AtomicInteger numPreviousAndCurrentConnections) {
         super(id, port, socket);
         this.numPreviousAndCurrentConnections = numPreviousAndCurrentConnections;
     }

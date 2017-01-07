@@ -1,7 +1,7 @@
 package com.hermes.worker;
 
 import com.hermes.network.SocketServer;
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.zookeeper.ZKManager;
 import com.hermes.zookeeper.ZKPaths;
 import com.hermes.zookeeper.ZKUtility;
@@ -45,7 +45,7 @@ public class ConnectionCounterSocketServer extends SocketServer {
     }
 
     @Override
-    protected SocketServerHandlerThread buildHandlerThread(Socket socket) {
-        return new ConnectionCounterWorkerThread(id, port, socket, numPreviousAndCurrentConnections);
+    protected SocketServerHandler buildHandler(Socket socket) {
+        return new ConnectionCounterWorkerHandler(id, port, socket, numPreviousAndCurrentConnections);
     }
 }

@@ -1,7 +1,7 @@
 package com.hermes.worker;
 
 import com.hermes.network.SocketServer;
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.timeout.PacketTimeoutManager;
 import com.hermes.network.timeout.TimeoutConfig;
@@ -51,9 +51,9 @@ public class MessageBroadcastSocketServer extends SocketServer {
         CompletableFuture<Void> messageAckFuture = new CompletableFuture<>();
         messageAckFutures.add(messageAckFuture);
         packetTimeoutManager.add(packet.MESSAGE_ID, TimeoutConfig.TIMEOUT, messageAckFuture);
-        for (SocketServerHandlerThread thread : threads) {
+        for (SocketServerHandler handler : serverHandlers) {
             try {
-                send(thread, packet);
+                send(handler, packet);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -62,7 +62,7 @@ public class MessageBroadcastSocketServer extends SocketServer {
     }
 
     @Override
-    protected SocketServerHandlerThread buildHandlerThread(Socket socket) {
-        return new MessageBroadcastWorkerThread(id, port, socket, packetTimeoutManager);
+    protected SocketServerHandler buildHandler(Socket socket) {
+        return new MessageBroadcastWorkerHandler(id, port, socket, packetTimeoutManager);
     }
 }

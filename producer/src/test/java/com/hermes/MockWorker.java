@@ -1,7 +1,7 @@
 package com.hermes;
 
 import com.hermes.network.SocketServer;
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.zookeeper.ZKManager;
 import com.hermes.zookeeper.ZKPaths;
 import com.hermes.zookeeper.ZKUtility;
@@ -40,7 +40,7 @@ public class MockWorker extends SocketServer {
     }
 
     @Override
-    protected SocketServerHandlerThread buildHandlerThread(Socket socket) {
-        return new MockWorkerThread(socket, receivedMessages);
+    protected SocketServerHandler buildHandler(Socket socket) {
+        return new MockWorkerHandler(socket, receivedMessages);
     }
 }

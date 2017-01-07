@@ -1,7 +1,7 @@
 package com.hermes.loadbalance;
 
 import com.hermes.connection.ProducerConnectionsManager;
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.partition.Partition;
 import com.hermes.worker.WorkerManager;
 
@@ -68,7 +68,7 @@ public class LoadRebalancer {
 
     private void disconnectConnectionsForPartition(String partition, double percentToRemove) {
         List<String> channels = producerConnectionsManager.getChannels();
-        List<SocketServerHandlerThread> connections = new ArrayList<>();
+        List<SocketServerHandler> connections = new ArrayList<>();
         for (String channel : channels) {
             if (partition.equals(Partition.get(channel))) {
                 connections.addAll(producerConnectionsManager.getConnections(channel));

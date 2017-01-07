@@ -7,10 +7,10 @@ import com.hermes.network.timeout.PacketTimeoutManager;
 
 import java.net.Socket;
 
-public class MessageBroadcastWorkerThread extends AbstractMockWorkerThread {
+public class MessageBroadcastWorkerHandler extends AbstractMockWorkerHandler {
     private PacketTimeoutManager packetTimeoutManager;
 
-    public MessageBroadcastWorkerThread(String id, int port, Socket socket, PacketTimeoutManager packetTimeoutManager) {
+    public MessageBroadcastWorkerHandler(String id, int port, Socket socket, PacketTimeoutManager packetTimeoutManager) {
         super(id, port, socket);
         this.packetTimeoutManager = packetTimeoutManager;
     }

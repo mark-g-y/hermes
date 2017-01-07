@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class SocketServer {
 
-    protected Set<SocketServerHandlerThread> threads;
+    protected Set<SocketServerHandler> serverHandlers;
     private AtomicBoolean shouldAcceptConnections;
     private int port;
     private ServerSocket socket;
@@ -18,7 +18,7 @@ public abstract class SocketServer {
     public SocketServer(int port) {
         this.port = port;
         this.shouldAcceptConnections = new AtomicBoolean(true);
-        this.threads = new HashSet<>();
+        this.serverHandlers = new HashSet<>();
     }
 
     public void start() {
@@ -30,9 +30,9 @@ public abstract class SocketServer {
         }
         while(shouldAcceptConnections.get()) {
             try {
-                SocketServerHandlerThread thread = buildHandlerThread(socket.accept());
-                threads.add(thread);
-                thread.start();
+                SocketServerHandler handler = buildHandler(socket.accept());
+                serverHandlers.add(handler);
+                new Thread(handler).start();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -46,14 +46,14 @@ public abstract class SocketServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Iterator<SocketServerHandlerThread> iterator = threads.iterator();
+        Iterator<SocketServerHandler> iterator = serverHandlers.iterator();
         while (iterator.hasNext()) {
             iterator.next().shutdown();
         }
-        threads.clear();
+        serverHandlers.clear();
     }
 
-    protected void send(SocketServerHandlerThread thread, Packet packet) {
+    protected void send(SocketServerHandler thread, Packet packet) {
         try {
             thread.send(packet);
         } catch(Exception e) {
@@ -61,5 +61,5 @@ public abstract class SocketServer {
         }
     }
 
-    protected abstract SocketServerHandlerThread buildHandlerThread(Socket socket);
+    protected abstract SocketServerHandler buildHandler(Socket socket);
 }

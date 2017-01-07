@@ -1,6 +1,6 @@
 package com.hermes;
 
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.network.packet.AckPacket;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.packet.Packet;
@@ -10,10 +10,10 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 
-public class MockWorkerThread extends SocketServerHandlerThread {
+public class MockWorkerHandler extends SocketServerHandler {
     private List<String> receivedMessages; // no need for thread safety in this test
 
-    public MockWorkerThread(Socket socket, List<String> receivedMessages) {
+    public MockWorkerHandler(Socket socket, List<String> receivedMessages) {
         super(socket);
         this.receivedMessages = receivedMessages;
     }

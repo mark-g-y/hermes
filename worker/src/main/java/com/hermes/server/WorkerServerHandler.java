@@ -6,13 +6,13 @@ import com.hermes.connection.ProducerConnectionsManager;
 import com.hermes.message.MessageQueues;
 import com.hermes.server.packethandler.*;
 import com.hermes.connection.WorkerToWorkerConnectionsManager;
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.network.packet.*;
 import com.hermes.network.timeout.PacketTimeoutManager;
 
 import java.net.Socket;
 
-public class WorkerServerHandlerThread extends SocketServerHandlerThread implements ServerToClientSender {
+public class WorkerServerHandler extends SocketServerHandler implements ServerToClientSender {
     private PacketHandler packetHandler;
     private String id;
     private String channelName;
@@ -23,13 +23,13 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread impleme
     private ConsumerConnectionsManager consumerConnectionsManager;
     private WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager;
 
-    public WorkerServerHandlerThread(Socket socket,
-                                     String id,
-                                     MessageQueues messageQueues,
-                                     PacketTimeoutManager packetTimeoutManager,
-                                     ProducerConnectionsManager producerConnectionsManager,
-                                     ConsumerConnectionsManager consumerConnectionsManager,
-                                     WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager) {
+    public WorkerServerHandler(Socket socket,
+                               String id,
+                               MessageQueues messageQueues,
+                               PacketTimeoutManager packetTimeoutManager,
+                               ProducerConnectionsManager producerConnectionsManager,
+                               ConsumerConnectionsManager consumerConnectionsManager,
+                               WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager) {
         super(socket);
         this.packetHandler = new DefaultPacketHandler(id, packetTimeoutManager, this);
         this.id = id;

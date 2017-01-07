@@ -7,12 +7,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-public abstract class SocketServerHandlerThread extends Thread {
+public abstract class SocketServerHandler implements Runnable {
     private Socket socket;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
 
-    public SocketServerHandlerThread(Socket socket) {
+    public SocketServerHandler(Socket socket) {
         super();
         try {
             this.socket = socket;

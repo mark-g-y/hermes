@@ -1,6 +1,6 @@
 package com.hermes.connection;
 
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -9,13 +9,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ProducerConnectionsManager {
-    private ConcurrentHashMap<String, CopyOnWriteArrayList<SocketServerHandlerThread>> connections;
+    private ConcurrentHashMap<String, CopyOnWriteArrayList<SocketServerHandler>> connections;
     
     public ProducerConnectionsManager() {
         connections = new ConcurrentHashMap<>();
     }
 
-    public List<SocketServerHandlerThread> getConnections(String channelName) {
+    public List<SocketServerHandler> getConnections(String channelName) {
         return connections.get(channelName);
     }
 
@@ -28,17 +28,17 @@ public class ProducerConnectionsManager {
         return channels;
     }
 
-    public synchronized void add(String channelName, SocketServerHandlerThread socketServerHandlerThread) {
+    public synchronized void add(String channelName, SocketServerHandler socketServerHandler) {
         if (!connections.containsKey(channelName)) {
             connections.put(channelName, new CopyOnWriteArrayList<>());
         }
-        connections.get(channelName).add(socketServerHandlerThread);
+        connections.get(channelName).add(socketServerHandler);
     }
 
-    public synchronized boolean remove(String channelName, SocketServerHandlerThread socketServerHandlerThread) {
+    public synchronized boolean remove(String channelName, SocketServerHandler socketServerHandler) {
         boolean result = false;
         if (channelName != null && connections.containsKey(channelName)) {
-            result = connections.get(channelName).remove(socketServerHandlerThread);
+            result = connections.get(channelName).remove(socketServerHandler);
             if (connections.get(channelName).isEmpty()) {
                 connections.remove(channelName);
             }

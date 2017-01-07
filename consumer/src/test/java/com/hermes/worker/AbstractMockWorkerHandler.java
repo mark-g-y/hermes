@@ -1,6 +1,6 @@
 package com.hermes.worker;
 
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.zookeeper.ZKManager;
 import com.hermes.zookeeper.ZKPaths;
 import com.hermes.zookeeper.ZKUtility;
@@ -10,11 +10,11 @@ import org.apache.zookeeper.ZooKeeper;
 
 import java.net.Socket;
 
-public abstract class AbstractMockWorkerThread extends SocketServerHandlerThread {
+public abstract class AbstractMockWorkerHandler extends SocketServerHandler {
     protected String id;
     protected ZooKeeper zk;
 
-    public AbstractMockWorkerThread(String id, int port, Socket socket) {
+    public AbstractMockWorkerHandler(String id, int port, Socket socket) {
         super(socket);
         this.id = id;
         this.zk = ZKManager.get();

@@ -7,7 +7,7 @@ import com.hermes.loadbalance.LoadRebalancer;
 import com.hermes.loadbalance.MonitorLoadThread;
 import com.hermes.message.MessageQueues;
 import com.hermes.network.SocketServer;
-import com.hermes.network.SocketServerHandlerThread;
+import com.hermes.network.SocketServerHandler;
 import com.hermes.network.timeout.PacketTimeoutManager;
 
 import java.net.Socket;
@@ -47,9 +47,9 @@ public class WorkerSocketServer extends SocketServer {
     }
 
     @Override
-    protected SocketServerHandlerThread buildHandlerThread(Socket socket) {
-        return new WorkerServerHandlerThread(socket, id, messageQueues, packetTimeoutManager,
-                                             producerConnectionsManager, consumerConnectionsManager,
-                                             workerToWorkerConnectionsManager);
+    protected SocketServerHandler buildHandler(Socket socket) {
+        return new WorkerServerHandler(socket, id, messageQueues, packetTimeoutManager,
+                                       producerConnectionsManager, consumerConnectionsManager,
+                                       workerToWorkerConnectionsManager);
     }
 }
