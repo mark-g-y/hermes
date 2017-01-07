@@ -1,8 +1,9 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
-import com.hermes.network.packet.InitPacket;
+import com.hermes.network.packet.ConsumerInitPacket;
 import com.hermes.network.packet.MessagePacket;
+import com.hermes.network.packet.ProducerInitPacket;
 import com.hermes.network.timeout.TimeoutConfig;
 import com.hermes.test.UsesZooKeeperTest;
 import org.testng.Assert;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestWorkerBackups extends UsesZooKeeperTest {
     private static final String CHANNEL = "foobar";
+    private static final String CONSUMER_GROUP = "A";
 
     private Worker[] workers;
     private ProducerClient[] sendClients;
@@ -41,15 +43,15 @@ public class TestWorkerBackups extends UsesZooKeeperTest {
         backups.remove(0);
         sendClients[0] = new ProducerClient(ClientType.PRODUCER_MAIN, workerData[0], backups, sendCallback);
         sendClients[0].start();
-        sendClients[0].send(new InitPacket(ClientType.PRODUCER_MAIN, CHANNEL, backups, TimeoutConfig.TIMEOUT),
-                                           sendCallback);
+        sendClients[0].send(new ProducerInitPacket(ClientType.PRODUCER_MAIN, CHANNEL, backups, TimeoutConfig.TIMEOUT),
+                            sendCallback);
         for (int i = 1; i < sendClients.length; i++) {
             backups = new ArrayList<>(backups);
             backups.remove(0);
             sendClients[i] = new ProducerClient(ClientType.PRODUCER_BACKUP, workerData[i], backups, sendCallback);
             sendClients[i].start();
-            sendClients[i].send(new InitPacket(ClientType.PRODUCER_BACKUP, CHANNEL, backups,
-                                               (i + 1) * TimeoutConfig.TIMEOUT), sendCallback);
+            sendClients[i].send(new ProducerInitPacket(ClientType.PRODUCER_BACKUP, CHANNEL, backups,
+                                                       (i + 1) * TimeoutConfig.TIMEOUT), sendCallback);
         }
 
         receiveClients = new ConsumerClient[3];
@@ -66,7 +68,7 @@ public class TestWorkerBackups extends UsesZooKeeperTest {
                 }
             });
             receiveClients[i].start();
-            receiveClients[i].init(new InitPacket(ClientType.CONSUMER, CHANNEL));
+            receiveClients[i].init(new ConsumerInitPacket(CHANNEL, CONSUMER_GROUP));
         }
 
         workers[0].stop();

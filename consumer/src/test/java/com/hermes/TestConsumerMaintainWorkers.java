@@ -12,6 +12,7 @@ import org.testng.annotations.*;
 
 public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
     private static final String CHANNEL = "foobar";
+    private static final String CONSUMER_GROUP = "A";
     private static final String PARTITION = Partition.get(CHANNEL);
 
     private ConnectionCounterSocketServer[] servers;
@@ -28,7 +29,7 @@ public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[1].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-        Consumer consumer = new Consumer(CHANNEL, new Receiver() {
+        Consumer consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
             @Override
             public void onMessageReceived(String message) {
             }
@@ -56,7 +57,7 @@ public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[1].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-        Consumer consumer = new Consumer(CHANNEL, new Receiver() {
+        Consumer consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
             @Override
             public void onMessageReceived(String message) {
             }
@@ -104,7 +105,7 @@ public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
                                          ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
 
-        Consumer consumer = new Consumer(CHANNEL, new Receiver() {
+        Consumer consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
             @Override
             public void onMessageReceived(String message) {
             }

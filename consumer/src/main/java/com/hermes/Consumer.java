@@ -1,6 +1,7 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
+import com.hermes.network.packet.ConsumerInitPacket;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.worker.WorkerManager;
 import com.hermes.network.packet.InitPacket;
@@ -14,12 +15,14 @@ import java.util.stream.Collectors;
 
 public class Consumer {
     private String channelName;
+    private String groupName;
     private Receiver receiver;
     private List<ConsumerClient> clients;
     private AtomicBoolean isStopped;
 
-    public Consumer(String channelName, Receiver receiver) {
+    public Consumer(String channelName, String groupName, Receiver receiver) {
         this.channelName = channelName;
+        this.groupName = groupName;
         this.receiver = receiver;
         this.clients = new ArrayList<>();
         this.isStopped = new AtomicBoolean(false);
@@ -73,7 +76,7 @@ public class Consumer {
         clients.add(consumerClient);
         consumerClient.start();
         try {
-            consumerClient.init(new InitPacket(ClientType.CONSUMER, channelName));
+            consumerClient.init(new ConsumerInitPacket(channelName, groupName));
         } catch (Exception e) {
             // let backups handle failure via sending through different channel
         }

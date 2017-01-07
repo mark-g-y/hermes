@@ -1,10 +1,10 @@
 package com.hermes;
 
 import com.hermes.client.ClientType;
+import com.hermes.network.packet.ProducerInitPacket;
 import com.hermes.partition.Partition;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.worker.WorkerManager;
-import com.hermes.network.packet.InitPacket;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.packet.Packet;
 import com.hermes.network.timeout.TimeoutConfig;
@@ -96,8 +96,8 @@ public class Producer {
 
     private void sendInitPackets() {
         for (ProducerClient client : clients) {
-            client.send(new InitPacket(client.getClientType(), channelName, client.getWorkerBackups(),
-                                       TimeoutConfig.TIMEOUT * (clients.size() - client.getWorkerBackups().size())),
+            client.send(new ProducerInitPacket(client.getClientType(), channelName, client.getWorkerBackups(),
+                                               TimeoutConfig.TIMEOUT * (clients.size() - client.getWorkerBackups().size())),
                         new CompletableFuture<>());
         }
     }

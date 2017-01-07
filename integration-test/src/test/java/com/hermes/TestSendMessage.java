@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestSendMessage extends UsesZooKeeperTest {
     private static final String CHANNEL_BASE = "foobar";
+    private static final String CONSUMER_GROUP = "A";
     private static final long TIMEOUT = 3000;
 
     private Worker[] workers;
@@ -28,12 +29,6 @@ public class TestSendMessage extends UsesZooKeeperTest {
         }
         startWorkers();
 
-        producers = new Producer[numProducers];
-        for (int i = 0; i < producers.length; i++) {
-            producers[i] = new Producer(CHANNEL_BASE + i);
-            producers[i].start();
-        }
-
         consumers = new Consumer[numConsumers];
         CompletableFuture<String>[] receiveMessageFutures = new CompletableFuture[consumers.length];
         for (int i = 0; i < consumers.length; i++) {
@@ -49,8 +44,14 @@ public class TestSendMessage extends UsesZooKeeperTest {
                     receiveMessageFutures[index].completeExceptionally(throwable);
                 }
             };
-            consumers[i] = new Consumer(CHANNEL_BASE + i, receiver);
+            consumers[i] = new Consumer(CHANNEL_BASE + i, CONSUMER_GROUP, receiver);
             consumers[i].start();
+        }
+
+        producers = new Producer[numProducers];
+        for (int i = 0; i < producers.length; i++) {
+            producers[i] = new Producer(CHANNEL_BASE + i);
+            producers[i].start();
         }
 
         String baseMessage = "testing";

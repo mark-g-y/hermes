@@ -1,10 +1,11 @@
 package com.hermes.server;
 
 import com.hermes.client.ClientType;
+import com.hermes.connection.ConsumerConnectionsManager;
+import com.hermes.connection.ProducerConnectionsManager;
+import com.hermes.message.MessageQueues;
 import com.hermes.server.packethandler.*;
-import com.hermes.connection.ChannelClientConnectionsManager;
 import com.hermes.connection.WorkerToWorkerConnectionsManager;
-import com.hermes.message.ChannelMessageQueues;
 import com.hermes.network.SocketServerHandlerThread;
 import com.hermes.network.packet.*;
 import com.hermes.network.timeout.PacketTimeoutManager;
@@ -15,23 +16,24 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread impleme
     private PacketHandler packetHandler;
     private String id;
     private String channelName;
-    private ChannelMessageQueues channelMessageQueues;
+    private String groupName;
+    private MessageQueues messageQueues;
     private PacketTimeoutManager packetTimeoutManager;
-    private ChannelClientConnectionsManager producerConnectionsManager;
-    private ChannelClientConnectionsManager consumerConnectionsManager;
+    private ProducerConnectionsManager producerConnectionsManager;
+    private ConsumerConnectionsManager consumerConnectionsManager;
     private WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager;
 
     public WorkerServerHandlerThread(Socket socket,
                                      String id,
-                                     ChannelMessageQueues channelMessageQueues,
+                                     MessageQueues messageQueues,
                                      PacketTimeoutManager packetTimeoutManager,
-                                     ChannelClientConnectionsManager producerConnectionsManager,
-                                     ChannelClientConnectionsManager consumerConnectionsManager,
+                                     ProducerConnectionsManager producerConnectionsManager,
+                                     ConsumerConnectionsManager consumerConnectionsManager,
                                      WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager) {
         super(socket);
         this.packetHandler = new DefaultPacketHandler(id, packetTimeoutManager, this);
         this.id = id;
-        this.channelMessageQueues = channelMessageQueues;
+        this.messageQueues = messageQueues;
         this.packetTimeoutManager = packetTimeoutManager;
         this.producerConnectionsManager = producerConnectionsManager;
         this.consumerConnectionsManager = consumerConnectionsManager;
@@ -77,23 +79,25 @@ public class WorkerServerHandlerThread extends SocketServerHandlerThread impleme
         channelName = packet.getChannelName();
 
         if (packet.getClientType() == ClientType.CONSUMER) {
-            consumerConnectionsManager.add(channelName, this);
-            packetHandler = new ConsumerPacketHandler(id, channelMessageQueues.getQueueCreateIfNotExists(channelName),
+            groupName = ((ConsumerInitPacket)packet).getGroupName();
+            consumerConnectionsManager.add(channelName, groupName, this);
+            packetHandler = new ConsumerPacketHandler(id, messageQueues.getQueueCreateIfNotExists(channelName, groupName),
                                                       packetTimeoutManager, workerToWorkerConnectionsManager, this);
         } else if (packet.getClientType() == ClientType.PRODUCER_MAIN) {
             producerConnectionsManager.add(channelName, this);
-            packetHandler = new MainProducerPacketHandler(id, channelName, packet.getBackups(), channelMessageQueues,
-                                                          packetTimeoutManager, this);
+            packetHandler = new MainProducerPacketHandler(id, channelName, ((ProducerInitPacket)packet).getBackups(),
+                                                          messageQueues, packetTimeoutManager, this);
         } else if (packet.getClientType() == ClientType.PRODUCER_BACKUP) {
             producerConnectionsManager.add(channelName, this);
-            packetHandler = new BackupProducerPacketHandler(id, channelName, packet.getBackups(),
-                                                            packet.getToleratedTimeout(), channelMessageQueues,
+            packetHandler = new BackupProducerPacketHandler(id, channelName, ((ProducerInitPacket)packet).getBackups(),
+                                                            packet.getToleratedTimeout(), messageQueues,
                                                             packetTimeoutManager, this);
         }
     }
 
     private void removeFromWorkerToClientConnections() {
         producerConnectionsManager.remove(channelName, this);
-        consumerConnectionsManager.remove(channelName, this);
+        consumerConnectionsManager.remove(channelName, groupName, this);
+        messageQueues.removeUnused(channelName, groupName, consumerConnectionsManager);
     }
 }

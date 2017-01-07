@@ -1,10 +1,11 @@
 package com.hermes.server;
 
-import com.hermes.connection.ChannelClientConnectionsManager;
+import com.hermes.connection.ConsumerConnectionsManager;
+import com.hermes.connection.ProducerConnectionsManager;
 import com.hermes.connection.WorkerToWorkerConnectionsManager;
 import com.hermes.loadbalance.LoadRebalancer;
 import com.hermes.loadbalance.MonitorLoadThread;
-import com.hermes.message.ChannelMessageQueues;
+import com.hermes.message.MessageQueues;
 import com.hermes.network.SocketServer;
 import com.hermes.network.SocketServerHandlerThread;
 import com.hermes.network.timeout.PacketTimeoutManager;
@@ -13,10 +14,10 @@ import java.net.Socket;
 
 public class WorkerSocketServer extends SocketServer {
     private String id;
-    private ChannelMessageQueues channelMessageQueues;
+    private MessageQueues messageQueues;
     private PacketTimeoutManager packetTimeoutManager;
-    private ChannelClientConnectionsManager producerConnectionsManager;
-    private ChannelClientConnectionsManager consumerConnectionsManager;
+    private ProducerConnectionsManager producerConnectionsManager;
+    private ConsumerConnectionsManager consumerConnectionsManager;
     private WorkerToWorkerConnectionsManager workerToWorkerConnectionsManager;
 
     private MonitorLoadThread monitorLoadThread;
@@ -24,10 +25,10 @@ public class WorkerSocketServer extends SocketServer {
     public WorkerSocketServer(String id, int port) {
         super(port);
         this.id = id;
-        this.channelMessageQueues = new ChannelMessageQueues();
+        this.messageQueues = new MessageQueues();
         this.packetTimeoutManager = new PacketTimeoutManager();
-        this.producerConnectionsManager = new ChannelClientConnectionsManager();
-        this.consumerConnectionsManager = new ChannelClientConnectionsManager();
+        this.producerConnectionsManager = new ProducerConnectionsManager();
+        this.consumerConnectionsManager = new ConsumerConnectionsManager();
         this.workerToWorkerConnectionsManager = new WorkerToWorkerConnectionsManager();
 
         this.monitorLoadThread = new MonitorLoadThread(id, new LoadRebalancer(producerConnectionsManager));
@@ -47,7 +48,7 @@ public class WorkerSocketServer extends SocketServer {
 
     @Override
     protected SocketServerHandlerThread buildHandlerThread(Socket socket) {
-        return new WorkerServerHandlerThread(socket, id, channelMessageQueues, packetTimeoutManager,
+        return new WorkerServerHandlerThread(socket, id, messageQueues, packetTimeoutManager,
                                              producerConnectionsManager, consumerConnectionsManager,
                                              workerToWorkerConnectionsManager);
     }

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestSendMessageWithWorkerBackups extends UsesZooKeeperTest {
     private static final String CHANNEL = "foobar";
+    private static final String CONSUMER_GROUP = "A";
     private static final String PARTITION = Partition.get(CHANNEL);
 
     private Worker[] workers;
@@ -38,7 +39,7 @@ public class TestSendMessageWithWorkerBackups extends UsesZooKeeperTest {
 
         String sentMessage = "testing";
         AtomicInteger numMessageReceptions = new AtomicInteger(0);
-        consumer = new Consumer(CHANNEL, new Receiver() {
+        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
             @Override
             public void onMessageReceived(String message) {
                 if (sentMessage.equals(message)) {
@@ -77,12 +78,9 @@ public class TestSendMessageWithWorkerBackups extends UsesZooKeeperTest {
         }
         startWorkers();
 
-        producer = new Producer(CHANNEL, 2);
-        producer.start();
-
         String sentMessage = "testing";
         AtomicInteger numMessageReceptions = new AtomicInteger(0);
-        consumer = new Consumer(CHANNEL, new Receiver() {
+        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
             @Override
             public void onMessageReceived(String message) {
                 if (sentMessage.equals(message)) {
@@ -94,6 +92,9 @@ public class TestSendMessageWithWorkerBackups extends UsesZooKeeperTest {
             }
         });
         consumer.start();
+
+        producer = new Producer(CHANNEL, 2);
+        producer.start();
 
         // worker failure
         zk.delete(ZKPaths.PARTITIONS + "/" + PARTITION + "/" + 0, -1);
