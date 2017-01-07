@@ -55,6 +55,7 @@ public class Producer {
             workerBackups.remove(0);
             startClientForWorker(ClientType.PRODUCER_BACKUP, workers.get(i), workerBackups);
         }
+        sendInitPackets();
         workerLock.writeLock().unlock();
     }
 
@@ -67,9 +68,6 @@ public class Producer {
         });
         clients.add(client);
         client.start();
-        client.send(new InitPacket(clientType, channelName, workerBackups,
-                                   TimeoutConfig.TIMEOUT * (clients.size() - workerBackups.size())),
-                    new CompletableFuture<>());
     }
 
     private void handleConnectionLost(Throwable th, ProducerClient client) {
@@ -80,11 +78,27 @@ public class Producer {
             workerLock.writeLock().lock();
             clients.remove(client);
             Worker newWorker = getNewWorker();
+            updateWorkerBackups(client.getServerWorker(), newWorker);
             startClientForWorker(client.getClientType(), newWorker, client.getWorkerBackups());
+            sendInitPackets();
             workerLock.writeLock().unlock();
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+    private void updateWorkerBackups(Worker oldBackup, Worker newBackup) {
+        for (ProducerClient client : clients) {
+            client.replaceWorkerBackup(oldBackup, newBackup);
+        }
+    }
+
+    private void sendInitPackets() {
+        for (ProducerClient client : clients) {
+            client.send(new InitPacket(client.getClientType(), channelName, client.getWorkerBackups(),
+                                       TimeoutConfig.TIMEOUT * (clients.size() - client.getWorkerBackups().size())),
+                        new CompletableFuture<>());
         }
     }
 
