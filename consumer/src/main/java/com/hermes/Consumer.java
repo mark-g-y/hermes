@@ -1,10 +1,9 @@
 package com.hermes;
 
-import com.hermes.client.ClientType;
 import com.hermes.network.packet.ConsumerInitPacket;
 import com.hermes.worker.metadata.Worker;
 import com.hermes.worker.WorkerManager;
-import com.hermes.network.packet.InitPacket;
+import com.hermes.zookeeper.ZKManager;
 import org.apache.zookeeper.Watcher;
 
 import java.util.ArrayList;
@@ -20,7 +19,16 @@ public class Consumer {
     private List<ConsumerClient> clients;
     private AtomicBoolean isStopped;
 
-    public Consumer(String channelName, String groupName, Receiver receiver) {
+    /**
+     * Creates a new consumer to receive messages from Hermes.
+     * @param zkUrl         The ZooKeeper URL (or comma separated URLs) of the ZooKeeper node(s).
+     * @param channelName   The name of the channel to receive messages from.
+     * @param groupName     The consumer group this consumer belongs to. A message is broadcast to each consumer group,
+     *                      but only one consumer within each group will receive it (load balanced).
+     * @param receiver      The interface containing logic to handle received messages.
+     */
+    public Consumer(String zkUrl, String channelName, String groupName, Receiver receiver) {
+        ZKManager.init(zkUrl);
         this.channelName = channelName;
         this.groupName = groupName;
         this.receiver = receiver;
@@ -28,6 +36,9 @@ public class Consumer {
         this.isStopped = new AtomicBoolean(false);
     }
 
+    /**
+     * Starts the consumer. This method must be called before messages can be received.
+     */
     public void start() {
         updateWorkers();
     }
@@ -82,6 +93,9 @@ public class Consumer {
         }
     }
 
+    /**
+     * Shuts down this consumer.
+     */
     public void stop() {
         isStopped.set(true);
         for (ConsumerClient client : clients) {

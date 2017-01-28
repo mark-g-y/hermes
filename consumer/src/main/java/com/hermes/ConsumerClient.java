@@ -7,7 +7,7 @@ import com.hermes.network.SocketClient;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ConsumerClient extends SocketClient {
+class ConsumerClient extends SocketClient {
     private Worker worker;
     private Receiver receiver;
     private Thread receiverThread;

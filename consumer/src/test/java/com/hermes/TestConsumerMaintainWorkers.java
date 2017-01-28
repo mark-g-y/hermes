@@ -29,14 +29,7 @@ public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[1].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-        Consumer consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
-            @Override
-            public void onMessageReceived(String message) {
-            }
-            @Override
-            public void onDisconnect(Throwable throwable) {
-            }
-        });
+        Consumer consumer = new Consumer(ZK_URL, CHANNEL, CONSUMER_GROUP, (message) -> {});
         consumer.start();
         Thread.sleep(1000);
         consumer.stop();
@@ -57,14 +50,7 @@ public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/" + servers[1].getId(), null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-        Consumer consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
-            @Override
-            public void onMessageReceived(String message) {
-            }
-            @Override
-            public void onDisconnect(Throwable throwable) {
-            }
-        });
+        Consumer consumer = new Consumer(ZK_URL, CHANNEL, CONSUMER_GROUP, (message) -> {});
         consumer.start();
         Thread.sleep(1000);
 
@@ -105,14 +91,7 @@ public class TestConsumerMaintainWorkers extends UsesZooKeeperTest {
                                          ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
 
-        Consumer consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
-            @Override
-            public void onMessageReceived(String message) {
-            }
-            @Override
-            public void onDisconnect(Throwable throwable) {
-            }
-        });
+        Consumer consumer = new Consumer(ZK_URL, CHANNEL, CONSUMER_GROUP, (message) -> {});
         consumer.start();
 
         // simulate worker failure

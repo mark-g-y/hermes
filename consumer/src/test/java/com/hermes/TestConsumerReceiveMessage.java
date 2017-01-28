@@ -32,16 +32,7 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
         startServers();
 
         CompletableFuture<String> receiveMessageFuture = new CompletableFuture<>();
-        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
-            @Override
-            public void onMessageReceived(String message) {
-                receiveMessageFuture.complete(message);
-            }
-            @Override
-            public void onDisconnect(Throwable throwable) {
-                receiveMessageFuture.completeExceptionally(throwable);
-            }
-        });
+        consumer = new Consumer(ZK_URL, CHANNEL, CONSUMER_GROUP, (message) -> receiveMessageFuture.complete(message));
         consumer.start();
         Thread.sleep(1000);
 
@@ -70,16 +61,8 @@ public class TestConsumerReceiveMessage extends UsesZooKeeperTest {
         for (int i = 0;i < receiveMessageFutures.length; i++) {
             receiveMessageFutures[i] = new CompletableFuture<>();
         }
-        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
-            @Override
-            public void onMessageReceived(String message) {
-                receiveMessageFutures[completedIndex.getAndIncrement()].complete(message);
-            }
-            @Override
-            public void onDisconnect(Throwable throwable) {
-                receiveMessageFutures[completedIndex.getAndIncrement()].completeExceptionally(throwable);
-            }
-        });
+        consumer = new Consumer(ZK_URL, CHANNEL, CONSUMER_GROUP, (message) ->
+                receiveMessageFutures[completedIndex.getAndIncrement()].complete(message));
         consumer.start();
         Thread.sleep(1000);
 

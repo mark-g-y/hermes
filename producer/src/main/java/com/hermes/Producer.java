@@ -8,6 +8,7 @@ import com.hermes.worker.WorkerManager;
 import com.hermes.network.packet.MessagePacket;
 import com.hermes.network.packet.Packet;
 import com.hermes.network.timeout.TimeoutConfig;
+import com.hermes.zookeeper.ZKManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,14 @@ public class Producer {
     private ReentrantReadWriteLock workerLock;
     private AtomicBoolean isStopped;
 
-    public Producer(String channelName, int numWorkerBackups) {
+    /**
+     * Creates a new producer object that can be used to publish messages through Hermes.
+     * @param zkUrl             The ZooKeeper URL (or comma separated URLs) of the ZooKeeper node(s).
+     * @param channelName       Name of the channel you want to messages to.
+     * @param numWorkerBackups  The number of backups (excludes master) used to ensure fault tolerance.
+     */
+    public Producer(String zkUrl, String channelName, int numWorkerBackups) {
+        ZKManager.init(zkUrl);
         this.channelName = channelName;
         this.numWorkerBackups = numWorkerBackups;
         this.clients = new ArrayList<>();
@@ -33,10 +41,19 @@ public class Producer {
         this.isStopped = new AtomicBoolean(false);
     }
 
-    public Producer(String channelName) {
-        this(channelName, 0);
+    /**
+     * Creates a new producer object that can be used to publish messages through Hermes. This producer does not use
+     * backups to ensure fault tolerance.
+     * @param zkUrl         The ZooKeeper URL (or comma separated URLs) of the ZooKeeper node(s).
+     * @param channelName   Name of the channel you want to messages to.
+     */
+    public Producer(String zkUrl, String channelName) {
+        this(zkUrl, channelName, 0);
     }
 
+    /**
+     * Starts the producer. This method must be called before messages can be sent.
+     */
     public void start() {
         workerLock.writeLock().lock();
         List<Worker> workers;
@@ -107,6 +124,11 @@ public class Producer {
         return WorkerManager.selectWorkersForPartition(Partition.get(channelName), 1, existingWorkers).get(0);
     }
 
+    /**
+     * Sends a message.
+     * @param message   The message to be sent.
+     * @param callback  Callback for successful/unsuccessful delivery of message
+     */
     public void send(String message, ProducerCallback callback) {
         MessagePacket packet = new MessagePacket(message);
         send(packet, 0, callback);
@@ -140,6 +162,9 @@ public class Producer {
         return futures;
     }
 
+    /**
+     * Shuts down this producer.
+     */
     public void stop() {
         isStopped.set(true);
         workerLock.readLock().lock();

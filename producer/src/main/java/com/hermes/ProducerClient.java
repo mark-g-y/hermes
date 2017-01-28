@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public class ProducerClient extends SocketClient {
+class ProducerClient extends SocketClient {
     private ClientType clientType;
     private Worker serverWorker;
     private List<Worker> workerBackups;

@@ -29,7 +29,7 @@ public class TestProducerAllocateWorker extends UsesZooKeeperTest {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/A", null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
 
-        Producer producer = new Producer(CHANNEL, 2);
+        Producer producer = new Producer(ZK_URL, CHANNEL, 2);
         producer.start();
         Thread.sleep(1000);
 
@@ -53,7 +53,7 @@ public class TestProducerAllocateWorker extends UsesZooKeeperTest {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/B", null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
 
-        Producer producer = new Producer(CHANNEL, 2);
+        Producer producer = new Producer(ZK_URL, CHANNEL, 2);
         new Thread(() -> producer.start()).start();
         Thread.sleep(1000);
         new Thread(() -> workers[0].start()).start();

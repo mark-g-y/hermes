@@ -24,7 +24,7 @@ public class TestWorkerBackups extends UsesZooKeeperTest {
     private ProducerClient[] sendClients;
     private ConsumerClient[] receiveClients;
 
-    @Test
+    @Test(timeOut = 30000)
     public void testWorkerFailure() throws Exception {
         workers = new Worker[3];
         com.hermes.worker.metadata.Worker[] workerData = new com.hermes.worker.metadata.Worker[workers.length];
@@ -56,15 +56,9 @@ public class TestWorkerBackups extends UsesZooKeeperTest {
 
         receiveClients = new ConsumerClient[3];
         for (int i = 0; i < receiveClients.length; i++) {
-            receiveClients[i] = new ConsumerClient(workerData[i], new Receiver() {
-                @Override
-                public void onMessageReceived(String message) {
-                    if (sentMessage.equals(message)) {
-                        numMessageReceptions.getAndIncrement();
-                    }
-                }
-                @Override
-                public void onDisconnect(Throwable throwable) {
+            receiveClients[i] = new ConsumerClient(workerData[i], (message) -> {
+                if (sentMessage.equals(message)) {
+                    numMessageReceptions.getAndIncrement();
                 }
             });
             receiveClients[i].start();

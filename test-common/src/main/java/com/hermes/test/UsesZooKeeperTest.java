@@ -13,7 +13,7 @@ import org.testng.annotations.BeforeMethod;
  * This helper class assumes ZooKeeper is already running in the test environment.
  */
 public abstract class UsesZooKeeperTest {
-    private static final String ZK_URL = "localhost:2181";
+    protected static final String ZK_URL = "localhost:2181";
 
     protected ZooKeeper zk;
 

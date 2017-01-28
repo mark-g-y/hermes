@@ -34,23 +34,14 @@ public class TestSendMessage extends UsesZooKeeperTest {
         for (int i = 0; i < consumers.length; i++) {
             int index = i;
             receiveMessageFutures[i] = new CompletableFuture<>();
-            Receiver receiver = new Receiver() {
-                @Override
-                public void onMessageReceived(String message) {
-                    receiveMessageFutures[index].complete(message);
-                }
-                @Override
-                public void onDisconnect(Throwable throwable) {
-                    receiveMessageFutures[index].completeExceptionally(throwable);
-                }
-            };
-            consumers[i] = new Consumer(CHANNEL_BASE + i, CONSUMER_GROUP, receiver);
+            Receiver receiver = (message) -> receiveMessageFutures[index].complete(message);
+            consumers[i] = new Consumer(ZK_URL, CHANNEL_BASE + i, CONSUMER_GROUP, receiver);
             consumers[i].start();
         }
 
         producers = new Producer[numProducers];
         for (int i = 0; i < producers.length; i++) {
-            producers[i] = new Producer(CHANNEL_BASE + i);
+            producers[i] = new Producer(ZK_URL, CHANNEL_BASE + i);
             producers[i].start();
         }
 

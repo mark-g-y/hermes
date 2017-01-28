@@ -38,16 +38,7 @@ public class TestWorkerHandleMessages extends UsesZooKeeperTest {
         for (int i = 0; i < receiveClients.length; i++) {
             int index = i;
             receiveMessageFutures[i] = new CompletableFuture<>();
-            Receiver receiver = new Receiver() {
-                @Override
-                public void onMessageReceived(String message) {
-                    receiveMessageFutures[index].complete(message);
-                }
-                @Override
-                public void onDisconnect(Throwable throwable) {
-                    receiveMessageFutures[index].completeExceptionally(throwable);
-                }
-            };
+            Receiver receiver = (message) -> receiveMessageFutures[index].complete(message);
             receiveClients[i] = new ConsumerClient(workerData[i % workerData.length], receiver);
             receiveClients[i].start();
             receiveClients[i].init(new ConsumerInitPacket(CHANNEL_BASE + i, Integer.toString(i)));
@@ -100,16 +91,7 @@ public class TestWorkerHandleMessages extends UsesZooKeeperTest {
         for (int i = 0; i < receiveClients.length; i++) {
             int index = i;
             receiveMessageFutures[i] = new CompletableFuture<>();
-            Receiver receiver = new Receiver() {
-                @Override
-                public void onMessageReceived(String message) {
-                    receiveMessageFutures[index].complete(message);
-                }
-                @Override
-                public void onDisconnect(Throwable throwable) {
-                    receiveMessageFutures[index].completeExceptionally(throwable);
-                }
-            };
+            Receiver receiver = (message) -> receiveMessageFutures[index].complete(message);
             receiveClients[i] = new ConsumerClient(workerData[i % workerData.length], receiver);
             receiveClients[i].start();
             receiveClients[i].init(new ConsumerInitPacket(CHANNEL_BASE, consumerGroups[i]));

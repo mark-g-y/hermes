@@ -28,7 +28,7 @@ public class TestProducerConnection extends UsesZooKeeperTest {
         new Thread(() -> mockWorker2.start()).start();
     }
 
-    @Test
+    @Test(timeOut = 3000)
     public void testProducerConnectToWorker() throws Exception {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/workerA", null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
@@ -44,7 +44,7 @@ public class TestProducerConnection extends UsesZooKeeperTest {
                 future.completeExceptionally(th);
             }
         };
-        Producer producer = new Producer(CHANNEL);
+        Producer producer = new Producer(ZK_URL, CHANNEL);
         try {
             String message = "testing";
             producer.start();
@@ -58,7 +58,7 @@ public class TestProducerConnection extends UsesZooKeeperTest {
         producer.stop();
     }
 
-    @Test
+    @Test(timeOut = 3000)
     public void testReconnectDifferentWorkerOnFailure() throws Exception {
         ZKUtility.createIgnoreExists(zk, ZKPaths.PARTITIONS + "/" + PARTITION + "/workerA", null,
                                      ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
@@ -74,7 +74,7 @@ public class TestProducerConnection extends UsesZooKeeperTest {
                 future.completeExceptionally(th);
             }
         };
-        Producer producer = new Producer(CHANNEL);
+        Producer producer = new Producer(ZK_URL, CHANNEL);
         producer.start();
 
         // simulate new worker creation but old worker failure

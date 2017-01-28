@@ -34,20 +34,14 @@ public class TestSendMessageWithWorkerBackups extends UsesZooKeeperTest {
         }
         startWorkers();
 
-        producer = new Producer(CHANNEL, 2);
+        producer = new Producer(ZK_URL, CHANNEL, 2);
         producer.start();
 
         String sentMessage = "testing";
         AtomicInteger numMessageReceptions = new AtomicInteger(0);
-        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
-            @Override
-            public void onMessageReceived(String message) {
-                if (sentMessage.equals(message)) {
-                    numMessageReceptions.getAndIncrement();
-                }
-            }
-            @Override
-            public void onDisconnect(Throwable throwable) {
+        consumer = new Consumer(ZK_URL, CHANNEL, CONSUMER_GROUP, (message) -> {
+            if (sentMessage.equals(message)) {
+                numMessageReceptions.getAndIncrement();
             }
         });
         consumer.start();
@@ -80,20 +74,14 @@ public class TestSendMessageWithWorkerBackups extends UsesZooKeeperTest {
 
         String sentMessage = "testing";
         AtomicInteger numMessageReceptions = new AtomicInteger(0);
-        consumer = new Consumer(CHANNEL, CONSUMER_GROUP, new Receiver() {
-            @Override
-            public void onMessageReceived(String message) {
-                if (sentMessage.equals(message)) {
-                    numMessageReceptions.getAndIncrement();
-                }
-            }
-            @Override
-            public void onDisconnect(Throwable throwable) {
+        consumer = new Consumer(ZK_URL, CHANNEL, CONSUMER_GROUP, (message) -> {
+            if (sentMessage.equals(message)) {
+                numMessageReceptions.getAndIncrement();
             }
         });
         consumer.start();
 
-        producer = new Producer(CHANNEL, 2);
+        producer = new Producer(ZK_URL, CHANNEL, 2);
         producer.start();
 
         // worker failure
